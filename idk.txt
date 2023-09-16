@@ -1,0 +1,53 @@
+expression
+
+// writes to scope:
+((=) token expression)
+let token = expression
+
+// writes immutable to scope
+(const ((=) token expression))
+const token = expression
+
+() => expression
+
+const add = (a b) -> a + b
+
+let fib = (n) -> {
+  if n == 0 || n == 1
+  then (fib n - 1) + (fib n - 2)
+}
+
+let fib = (n) -> {
+  if n == 0 || n == 1
+    then ((+) (fib n - 1) (fib n - 2))
+}
+
+
+
+ast of fib:
+[
+  {
+    type: 'let'
+    token: {
+      type: 'token'
+      value: 'fib'
+    }
+    value: {
+      type: 'function'
+      args: [
+        {
+          type: 'token'
+          value: 'n'
+        }
+      ]
+      sequence: [
+        {
+          type: 'if'
+          predicate: {}
+          consequent: {}
+          alternative: undefined
+        }
+      ]
+    }
+  }
+]

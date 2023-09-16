@@ -1,0 +1,68 @@
+parser grammar ExprParser;
+options { tokenVocab=ExprLexer; }
+
+program
+    : expr (expr)* EOF
+    ;
+    
+expr
+    : ID
+    | lambda
+    | sequence
+    | def
+    | if
+    | infixId
+    | primitive
+    | apply
+    | list
+    | object
+    | expr SEMI expr
+    | expr (MULT | DIV) expr
+    | expr (PLUS | SUB) expr
+    | expr BEQ expr
+    | expr (AND | OR) expr
+    ;
+    
+sequence : LCURLY (expr)* RCURLY ;
+
+def : LET ID EQ expr ;
+
+number
+    : INT
+    | FLOAT
+    ;
+
+primitive
+    : number
+    ;
+    
+infix
+    : PLUS
+    | MULT
+    | SUB
+    | DIV
+    | BEQ
+    | AND
+    | OR
+    ;
+
+infixId : LPAREN infix RPAREN ;
+
+apply
+    : LPAREN (expr)* RPAREN
+    | LPAREN expr infix expr RPAREN
+    ;
+
+lambda
+    : LPAREN (ID)* RPAREN ARROW expr
+    | ID ARROW expr
+    ;
+    
+list : LBRACKET (expr)* RBRACKET ;
+
+object : LBRACKET (expr COLON expr)* RBRACKET ;
+
+if
+    : IF expr THEN expr
+    | IF expr THEN expr ELSE expr
+    ;
