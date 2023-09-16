@@ -1,13 +1,25 @@
 // const util = require("util");
 import util from "util";
 
-export const log = (tag: string, obj) =>
+export const inspect = (obj) =>
+  util.inspect(obj, { showHidden: false, depth: null, colors: true });
+
+export const log = (tag: string, obj?: object) =>
   console.log(
     tag,
-    util.inspect(obj, { showHidden: false, depth: null, colors: true })
+    ...(obj
+      ? [util.inspect(obj, { showHidden: false, depth: null, colors: true })]
+      : [])
   );
 
-export const debug = (tag: string, obj) => debug.on && log(tag, obj);
+export const debug =
+  (func) =>
+  (...args) => {
+    log(func.name + " inputs:", args);
+    const result = func(args);
+    log(func.name + " output: ", result);
+    return result;
+  };
 debug.on = true;
 
 export const toObject = (

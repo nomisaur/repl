@@ -1,13 +1,17 @@
 // const { y } = require("./utils");
-import { y, toObject } from "./utils";
+import { y, toObject, log } from "./utils";
 
-export type Token = {
+type RawToken = {
   type: "white" | "digit" | "word" | "syntax" | "unknown";
   value: string;
+  isToken: true;
 };
 
-export type WrappedToken = {
-  token: Token;
+export type Token = {
+  type: "end" | "digit" | "word" | "syntax" | "unknown";
+  value: string;
+  isToken: true;
+  white: string;
 };
 
 const syntax =
@@ -41,12 +45,18 @@ const getWord = getter(isWord);
 
 const isSyntax = (char) => initialSyntaxChars[char];
 
-const getNextToken = (characters: string | string[]): [Token, string[]] => {
+const wrapRawToken = (type, value): RawToken => ({
+  isToken: true,
+  type,
+  value,
+});
+
+const getNextToken = (characters: string | string[]): [RawToken, string[]] => {
   const [first, ...tail] = characters;
 
-  const dispatch = (getter, type): [Token, string[]] => {
+  const dispatch = (getter, type): [RawToken, string[]] => {
     const [chars, rest] = getter(characters);
-    return [{ type, value: chars.join("") }, rest];
+    return [wrapRawToken(type, chars.join("")), rest];
   };
 
   if (isWhiteSpace(first)) {
@@ -63,19 +73,44 @@ const getNextToken = (characters: string | string[]): [Token, string[]] => {
     const firstTwo = [first, second].join("");
     const isTwoChars = syntaxMap[firstTwo];
     return [
-      { type: "syntax", value: isTwoChars ? firstTwo : first },
+      wrapRawToken("syntax", isTwoChars ? firstTwo : first),
       isTwoChars ? rest : tail,
     ];
   }
-  return [{ type: "unknown", value: first }, tail];
+  return [wrapRawToken("unknown", first), tail];
 };
 
-export const tokenize = (characters: string): WrappedToken[] => {
+const rawTokenize = (characters: string): RawToken[] => {
   return y((iter) => (acc, rest) => {
     if (!rest.length) return acc;
     const [token, leftovers] = getNextToken(rest);
-    return iter([...acc, { token }], leftovers);
+    return iter([...acc, token], leftovers);
   })([], characters);
+};
+
+const addWhite = (token, white) => ({
+  ...token,
+  white,
+});
+
+const makeEndToken = (white) => ({
+  isToken: true,
+  type: "end",
+  value: null,
+  white,
+});
+
+export const tokenize = (characters: string) => {
+  return y((iter) => (acc, tokens, previousWhite) => {
+    const [first, ...rest] = tokens;
+    if (!first) {
+      return [...acc, makeEndToken(previousWhite)];
+    }
+    if (first.type === "white") {
+      return iter(acc, rest, first.value);
+    }
+    return iter([...acc, addWhite(first, previousWhite)], rest, "");
+  })([], rawTokenize(characters), "");
 };
 
 const tokenizeStream = () => {};
