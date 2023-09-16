@@ -5,8 +5,6 @@ debug.on = true;
 type Expression = {
   type: string;
   value: any;
-  whiteSpace: string;
-  tokens?: { [key: string]: Token };
 };
 
 type Value = string | Token | Expression | ValueInterface | null;
@@ -17,16 +15,9 @@ interface ValueInterface {
 
 type ParseExpression = [Expression | null, Token[]];
 
-const wrapExpression = (
-  type: string,
-  value: any,
-  whiteSpace: string,
-  tokens?: { [key: string]: Token }
-): Expression => ({
+const wrapExpression = (type: string, value: any): Expression => ({
   type,
   value,
-  whiteSpace,
-  tokens,
 });
 
 const isAssignment = (tokens: Token[]) => {
@@ -34,94 +25,114 @@ const isAssignment = (tokens: Token[]) => {
   return token?.value === "=" && Boolean(next);
 };
 
-const parseAssignment = (id: Token, tokens: Token[]): ParseExpression => {
-  const [equals, ...rest1] = tokens;
+const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
+  const [equals_, ...rest1] = tokens;
   const [expression, rest2] = parseExression(rest1);
   return [
-    wrapExpression("assignment", { id: id.value, expression }, id.white, {
-      equals,
-    }),
+    wrapExpression("assignment", { id: id_.value, equals_, expression }),
     rest2,
   ];
 };
 
-const parseId = (id: Token, tokens: Token[]): ParseExpression => {
-  const expression = wrapExpression("id", id.value, id.white);
+const parseId = (id_: Token, tokens: Token[]): ParseExpression => {
+  const id = wrapExpression("id", id_.value);
   const [maybeArrow, ...restTokens] = tokens;
   if (maybeArrow.value == "->") {
-    return parseLambda(expression, maybeArrow, restTokens);
+    return parseLambda(null, [id], null, maybeArrow, restTokens);
   }
-  return [expression, tokens];
+  return [id, tokens];
 };
 
-const parseEnd = (end: Token): ParseExpression => {
-  return [wrapExpression("end", null, end.white), []];
+const parseEnd = (end_: Token): ParseExpression => {
+  return [wrapExpression("end", { end_ }), []];
 };
 
-const parseIf = (ifToken: Token, tokens: Token[]): ParseExpression => {
-  const [conditional, [thenToken, ...rest1]] = parseExression(tokens);
-  const [consequent, [maybeElseToken, ...rest2]] = parseExression(rest1);
-  if (maybeElseToken.value !== "else") {
+const parseIf = (if_: Token, tokens: Token[]): ParseExpression => {
+  const [conditional, [then_, ...rest1]] = parseExression(tokens);
+  const [consequent, [maybeElse_, ...rest2]] = parseExression(rest1);
+  if (maybeElse_.value !== "else") {
     return [
-      wrapExpression("if", { conditional, consequent }, ifToken.white, {
-        then: thenToken,
+      wrapExpression("if", {
+        if_,
+        conditional,
+        then_,
+        consequent,
       }),
-      [maybeElseToken, ...rest2],
+      [maybeElse_, ...rest2],
     ];
   }
   const [alternate, rest3] = parseExression(rest2);
   return [
-    wrapExpression(
-      "if",
-      {
-        conditional,
-        consequent,
-        alternate,
-      },
-      ifToken.white,
-      {
-        then: thenToken,
-        else: maybeElseToken,
-      }
-    ),
+    wrapExpression("if", {
+      if_,
+      conditional,
+      then_,
+      consequent,
+      else_: maybeElse_,
+      alternate,
+    }),
     rest3,
   ];
 };
 
-const parseSequence = (
-  openToken: Token,
-  tokens: Token[],
-  closeValue: string
-): ParseExpression => {
-  const [expressions, restTokens] = y((iter) => (acc, tokens2) => {
-    const [maybeLeftCurly, ...restTokens] = tokens2;
-    if (maybeLeftCurly.type === "end") {
-      throw Error(`Missing '${closeValue}'`);
-    }
-    if (maybeLeftCurly.value === closeValue) {
-      return [acc, restTokens];
-    }
-    const [expr, rest2] = parseExression([maybeLeftCurly, ...restTokens]);
-    return iter([...acc, expr], rest2);
-  })([], tokens);
-  return [wrapExpression("sequence", expressions, openToken.white), restTokens];
+const destructureSequence = (
+  sequence: Expression | null
+): [Token, Expression[], Token] => {
+  return [
+    // @ts-ignore
+    sequence.value.open_,
+    // @ts-ignore
+    sequence.value.expressions,
+    // @ts-ignore
+    sequence.value.close_,
+  ];
 };
 
-const parseParens = (rightParen: Token, tokens: Token[]): ParseExpression => {
-  const [parenBody, restTokens] = parseSequence(rightParen, tokens, ")");
+const parseSequence = (
+  open_: Token,
+  tokens: Token[],
+  close: string
+): ParseExpression => {
+  const [expressions, [close_, ...restTokens]] = y((iter) => (acc, tokens) => {
+    const [maybeClose_, ...restTokens] = tokens;
+    if (maybeClose_.type === "end") {
+      throw Error(`Missing '${close}'`);
+    }
+    if (maybeClose_.value === close) {
+      return [acc, [maybeClose_, ...restTokens]];
+    }
+    const [expr, rest2] = parseExression([maybeClose_, ...restTokens]);
+    return iter([...acc, expr], rest2);
+  })([], tokens);
+  return [
+    wrapExpression("sequence", {
+      open_,
+      expressions,
+      close_,
+    }),
+    restTokens,
+  ];
+};
+
+const parseParens = (open_: Token, tokens: Token[]): ParseExpression => {
+  const [sequence, restTokens] = parseSequence(open_, tokens, ")");
+  const [_, sequenceBody, close_] = destructureSequence(sequence);
   const [maybeArrow, ...restTokens2] = restTokens;
-  if (parenBody === null) {
+  if (sequenceBody === null) {
     throw Error("should not be possible");
   }
   if (maybeArrow.value === "->") {
-    return parseLambda(parenBody, maybeArrow, restTokens2);
+    return parseLambda(open_, sequenceBody, close_, maybeArrow, restTokens2);
   }
-  return parseApply(parenBody, restTokens);
+  //@ts-ignore
+  return parseApply(open_, sequenceBody, close_, restTokens);
 };
 
 const parseLambda = (
-  params: Expression,
-  arrow: Token,
+  open_: Token | null,
+  params: Expression[],
+  close_: Token | null,
+  arrow_: Token,
   tokens: Token[]
 ): ParseExpression => {
   const [body, restTokens] = parseExression(tokens);
@@ -130,25 +141,40 @@ const parseLambda = (
     throw Error("Lambda needs body");
   }
   return [
-    wrapExpression("lambda", { params, body }, "", { arrow }),
+    wrapExpression("lambda", {
+      open_,
+      params,
+      close_,
+      arrow_,
+      body,
+    }),
     restTokens,
   ];
 };
 
-const parseApply = (body: Expression, tokens: Token[]): ParseExpression => {
-  //@ts-ignore
-  const { value, whiteSpace } = body;
-  const [func, ...funcBody] = value as Expression[];
+const parseApply = (
+  open_: Token,
+  body: Expression[],
+  close_: Token,
+  tokens: Token[]
+): ParseExpression => {
+  const [func, ...args] = body;
   return [
-    wrapExpression("apply", { function: func, body: funcBody }, whiteSpace),
+    wrapExpression("apply", {
+      open_,
+      func,
+      args,
+      close_,
+    }),
     tokens,
   ];
 };
 
-const parseDefine = (letToken: Token, tokens: Token[]): ParseExpression => {
-  const [id, equals, ...rest1] = tokens;
-  const [expression, rest2] = parseExression(rest1);
-  return [wrapExpression("let", { id, expression }, ""), rest2];
+const parseDefine = (let_: Token, tokens: Token[]): ParseExpression => {
+  const [id_, ...rest1] = tokens;
+  const [id, [equals_, ...rest2]] = parseId(id_, rest1);
+  const [expression, rest3] = parseExression(rest2);
+  return [wrapExpression("let", { let_, id, equals_, expression }), rest3];
 };
 
 const parseExression = (tokens: Token[]): ParseExpression => {
@@ -181,7 +207,7 @@ const parseExression = (tokens: Token[]): ParseExpression => {
   }
   if (token.type === "unknown") {
   }
-  return [wrapExpression("unexpected", token, token.white), rest];
+  return [wrapExpression("unexpected", token), rest];
 };
 
 type ParseProgramIter = (acc: Expression[], tokens: Token[]) => Expression[];
