@@ -106,7 +106,11 @@ export const tokenize = (characters: string): Token[] => {
     if (!first) {
       return [...acc, makeEndToken(previousWhite)];
     }
-    if (first.type === "white") {
+    if (
+      first.type === "white" ||
+      first.value === "\n" ||
+      first.value === "\r"
+    ) {
       return iter(acc, rest, first.value);
     }
     return iter([...acc, addWhite(first, previousWhite)], rest, "");
