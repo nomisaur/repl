@@ -7,12 +7,6 @@ type Expression = {
   value: any;
 };
 
-type Value = string | Token | Expression | ValueInterface | null;
-
-interface ValueInterface {
-  [key: string]: Value;
-}
-
 type ParseExpression = [Expression | null, Token[]];
 
 const wrapExpression = (type: string, value: any): Expression => ({
@@ -93,7 +87,7 @@ const parseSequence = (
   tokens: Token[],
   close: string
 ): ParseExpression => {
-  const [expressions, [close_, ...restTokens]] = y((iter) => (acc, tokens) => {
+  const iter = (acc, tokens) => {
     const [maybeClose_, ...restTokens] = tokens;
     if (maybeClose_.type === "end") {
       throw Error(`Missing '${close}'`);
@@ -103,7 +97,8 @@ const parseSequence = (
     }
     const [expr, rest2] = parseExression([maybeClose_, ...restTokens]);
     return iter([...acc, expr], rest2);
-  })([], tokens);
+  };
+  const [expressions, [close_, ...restTokens]] = iter([], tokens);
   return [
     wrapExpression("sequence", {
       open_,
@@ -210,12 +205,12 @@ const parseExression = (tokens: Token[]): ParseExpression => {
   return [wrapExpression("unexpected", token), rest];
 };
 
-type ParseProgramIter = (acc: Expression[], tokens: Token[]) => Expression[];
 const parseProgram = (tokens: Token[]): Expression[] => {
-  return y((iter: ParseProgramIter) => (acc: Expression[], tokens: Token[]) => {
+  const iter = (acc: Expression[], tokens: Token[]): Expression[] => {
     const [expression, restOfTokens] = parseExression(tokens);
     return !expression ? acc : iter([...acc, expression], restOfTokens);
-  })([], tokens);
+  };
+  return iter([], tokens);
 };
 
 export const parse = (code: string) => {
