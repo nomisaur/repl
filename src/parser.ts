@@ -3,7 +3,6 @@ import { tokenize, Token } from "./tokenizer";
 debug.on = true;
 
 type Expression = {
-  isExpression: true;
   type: string;
   value: any;
   whiteSpace: string;
@@ -11,10 +10,7 @@ type Expression = {
 
 type ParseExpression = [Expression | null, Token[]];
 
-type GetExpression = [Expression | null, Token[]];
-
 const wrapExpression = (type, value, whiteSpace): Expression => ({
-  isExpression: true,
   type,
   value,
   whiteSpace,
@@ -25,7 +21,7 @@ const isAssignment = (tokens) => {
   return token?.value === "=" && next;
 };
 
-const parseAssignment = (id, tokens): GetExpression => {
+const parseAssignment = (id, tokens): ParseExpression => {
   const [_eq, ...rest1] = tokens;
   const [expression, ...rest2] = parseExression(rest1);
   return [
@@ -34,26 +30,23 @@ const parseAssignment = (id, tokens): GetExpression => {
   ];
 };
 
-const parseId = (id, tokens): GetExpression => {
+const parseId = (id, tokens): ParseExpression => {
   return [wrapExpression("id", id.value, id.white), tokens];
 };
 
-const parseEnd = (end): GetExpression => {
+const parseEnd = (end): ParseExpression => {
   return [wrapExpression("end", null, end.white), []];
 };
 
-const parseIf = (ifToken, tokens): GetExpression => {
+const parseIf = (ifToken, tokens): ParseExpression => {
   const [conditional, [_thenToken, ...rest1]] = parseExression(tokens);
-
   const [consequent, [maybeElseToken, ...rest2]] = parseExression(rest1);
-
   if (maybeElseToken.value !== "else") {
     return [
       wrapExpression("if", { conditional, consequent }, ifToken.white),
       [maybeElseToken, ...rest2],
     ];
   }
-
   const [alternate, rest3] = parseExression(rest2);
   return [
     wrapExpression("if", { conditional, consequent, alternate }, ifToken.white),
@@ -61,38 +54,28 @@ const parseIf = (ifToken, tokens): GetExpression => {
   ];
 };
 
-const getExpression = (chunks: (Expression | Token)[]): GetExpression => {
-  // console.log("getExpression", inspect(chunks));
-  const [chunk, ...rest] = chunks;
-  if ("isToken" in chunk) {
-    if (chunk.type === "end") {
-      return parseEnd(chunk);
-    }
-    if (chunk.type === "syntax") {
-    }
-    if (chunk.type === "word") {
-      if (chunk.value === "if") {
-        return parseIf(chunk, rest);
-      }
-      if (isAssignment(rest)) {
-        return parseAssignment(chunk, rest);
-      }
-      return parseId(chunk, rest);
-    }
-    if (chunk.type === "digit") {
-    }
-    if (chunk.type === "unknown") {
-    }
+const parseExression = (tokens: Token[]): ParseExpression => {
+  if (!tokens.length) return [null, []];
+  const [token, ...rest] = tokens;
+  if (token.type === "end") {
+    return parseEnd(token);
   }
-  if ("isExpression" in chunk) {
-    return [chunk, rest as Token[]];
+  if (token.type === "syntax") {
+  }
+  if (token.type === "word") {
+    if (token.value === "if") {
+      return parseIf(token, rest);
+    }
+    if (isAssignment(rest)) {
+      return parseAssignment(token, rest);
+    }
+    return parseId(token, rest);
+  }
+  if (token.type === "digit") {
+  }
+  if (token.type === "unknown") {
   }
   return [null, []];
-};
-
-const parseExression = (chunks): ParseExpression => {
-  if (!chunks.length) return [null, []];
-  return getExpression(chunks);
 };
 
 const parseProgram = (tokens: Token[]) => {

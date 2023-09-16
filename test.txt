@@ -1,1 +1,1 @@
-if a then b if c then d
+let a = if b then c
