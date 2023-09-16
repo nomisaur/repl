@@ -129,16 +129,26 @@ const parseLambda = (
   if (body.type === "end") {
     throw Error("Lambda needs body");
   }
-  return [wrapExpression("lambda", { params, arrow, body }, ""), restTokens];
+  return [
+    wrapExpression("lambda", { params, body }, "", { arrow }),
+    restTokens,
+  ];
 };
 
 const parseApply = (body: Expression, tokens: Token[]): ParseExpression => {
+  //@ts-ignore
   const { value, whiteSpace } = body;
   const [func, ...funcBody] = value as Expression[];
   return [
     wrapExpression("apply", { function: func, body: funcBody }, whiteSpace),
     tokens,
   ];
+};
+
+const parseDefine = (letToken: Token, tokens: Token[]): ParseExpression => {
+  const [id, equals, ...rest1] = tokens;
+  const [expression, rest2] = parseExression(rest1);
+  return [wrapExpression("let", { id, expression }, ""), rest2];
 };
 
 const parseExression = (tokens: Token[]): ParseExpression => {
@@ -156,6 +166,9 @@ const parseExression = (tokens: Token[]): ParseExpression => {
     }
   }
   if (token.type === "word") {
+    if (token.value === "let") {
+      return parseDefine(token, rest);
+    }
     if (token.value === "if") {
       return parseIf(token, rest);
     }
