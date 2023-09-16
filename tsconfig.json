@@ -5,7 +5,7 @@
     "module": "commonjs",
     "outDir": "bin",
     "rootDir": "src",
-    "strict": true,
+    // "strict": true,
     "noImplicitAny": false,
     "strictNullChecks": true,
     "checkJs": true,

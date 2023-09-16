@@ -1,1 +1,1 @@
-a = b = c
+if a then b if c then d

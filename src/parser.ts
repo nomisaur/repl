@@ -26,14 +26,14 @@ const isAssignment = (tokens) => {
 };
 
 const parseAssignment = (id, tokens): GetExpression => {
-  const [_eq, ...restA] = tokens;
-  const [[expression, ...restExpr], ...restB] = parseExression(restA);
+  const [_eq, ...rest1] = tokens;
+  const [[expression, ...restExpr], ...rest2] = parseExression(rest1);
   return [
     [
       wrapExpression("assignment", { id: id.value, expression }, id.white),
       ...restExpr,
     ],
-    ...restB,
+    ...rest2,
   ];
 };
 
@@ -45,16 +45,46 @@ const parseEnd = (end): GetExpression => {
   return [[wrapExpression("end", null, end.white)], []];
 };
 
-const getExpression = (chunks): GetExpression => {
+const parseIf = (ifToken, tokens): GetExpression => {
+  console.log("parse if", inspect({ ifToken, tokens }));
+
+  const [[conditional], [thenToken, ...rest1]] = parseExression(tokens);
+
+  const [[consequent], [maybeElseToken, ...rest2]] = parseExression(rest1);
+
+  if (maybeElseToken.value !== "else") {
+    return [
+      [wrapExpression("if", { conditional, consequent }, ifToken.white)],
+      [maybeElseToken, ...rest2],
+    ];
+  }
+
+  const [[alternate], rest3] = parseExression(rest2);
+  return [
+    [
+      wrapExpression(
+        "if",
+        { conditional, consequent, alternate },
+        ifToken.white
+      ),
+    ],
+    rest3,
+  ];
+};
+
+const getExpression = (chunks: (Expression | Token)[]): GetExpression => {
   // console.log("getExpression", inspect(chunks));
   const [chunk, ...rest] = chunks;
-  if (chunk.isToken) {
+  if ("isToken" in chunk) {
     if (chunk.type === "end") {
       return parseEnd(chunk);
     }
     if (chunk.type === "syntax") {
     }
     if (chunk.type === "word") {
+      if (chunk.value === "if") {
+        return parseIf(chunk, rest);
+      }
       if (isAssignment(rest)) {
         return parseAssignment(chunk, rest);
       }
@@ -65,8 +95,8 @@ const getExpression = (chunks): GetExpression => {
     if (chunk.type === "unknown") {
     }
   }
-  if (chunk.isExpression) {
-    return [chunk, rest];
+  if ("isExpression" in chunk) {
+    return [[chunk], rest as Token[]];
   }
   return [[], []];
 };
@@ -80,6 +110,7 @@ const parseProgram = (tokens: Token[]) => {
   return y((iter) => (acc, tokens) => {
     console.log("expressions", inspect(acc));
     const [expressions, restOfTokens] = parseExression(tokens);
+    console.log("expressions results", inspect({ expressions, restOfTokens }));
     return !expressions.length
       ? acc
       : iter([...acc, ...expressions], restOfTokens);
