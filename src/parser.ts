@@ -9,9 +9,9 @@ type Expression = {
   whiteSpace: string;
 };
 
-type ParseExpression = [Expression[], Token[]];
+type ParseExpression = [Expression | null, Token[]];
 
-type GetExpression = [(Expression | never)[], (Token | never)[]];
+type GetExpression = [Expression | null, Token[]];
 
 const wrapExpression = (type, value, whiteSpace): Expression => ({
   isExpression: true,
@@ -27,47 +27,36 @@ const isAssignment = (tokens) => {
 
 const parseAssignment = (id, tokens): GetExpression => {
   const [_eq, ...rest1] = tokens;
-  const [[expression, ...restExpr], ...rest2] = parseExression(rest1);
+  const [expression, ...rest2] = parseExression(rest1);
   return [
-    [
-      wrapExpression("assignment", { id: id.value, expression }, id.white),
-      ...restExpr,
-    ],
+    wrapExpression("assignment", { id: id.value, expression }, id.white),
     ...rest2,
   ];
 };
 
 const parseId = (id, tokens): GetExpression => {
-  return [[wrapExpression("id", id.value, id.white)], tokens];
+  return [wrapExpression("id", id.value, id.white), tokens];
 };
 
 const parseEnd = (end): GetExpression => {
-  return [[wrapExpression("end", null, end.white)], []];
+  return [wrapExpression("end", null, end.white), []];
 };
 
 const parseIf = (ifToken, tokens): GetExpression => {
-  console.log("parse if", inspect({ ifToken, tokens }));
+  const [conditional, [_thenToken, ...rest1]] = parseExression(tokens);
 
-  const [[conditional], [thenToken, ...rest1]] = parseExression(tokens);
-
-  const [[consequent], [maybeElseToken, ...rest2]] = parseExression(rest1);
+  const [consequent, [maybeElseToken, ...rest2]] = parseExression(rest1);
 
   if (maybeElseToken.value !== "else") {
     return [
-      [wrapExpression("if", { conditional, consequent }, ifToken.white)],
+      wrapExpression("if", { conditional, consequent }, ifToken.white),
       [maybeElseToken, ...rest2],
     ];
   }
 
-  const [[alternate], rest3] = parseExression(rest2);
+  const [alternate, rest3] = parseExression(rest2);
   return [
-    [
-      wrapExpression(
-        "if",
-        { conditional, consequent, alternate },
-        ifToken.white
-      ),
-    ],
+    wrapExpression("if", { conditional, consequent, alternate }, ifToken.white),
     rest3,
   ];
 };
@@ -96,24 +85,20 @@ const getExpression = (chunks: (Expression | Token)[]): GetExpression => {
     }
   }
   if ("isExpression" in chunk) {
-    return [[chunk], rest as Token[]];
+    return [chunk, rest as Token[]];
   }
-  return [[], []];
+  return [null, []];
 };
 
 const parseExression = (chunks): ParseExpression => {
-  if (!chunks.length) return [[], []];
+  if (!chunks.length) return [null, []];
   return getExpression(chunks);
 };
 
 const parseProgram = (tokens: Token[]) => {
   return y((iter) => (acc, tokens) => {
-    console.log("expressions", inspect(acc));
-    const [expressions, restOfTokens] = parseExression(tokens);
-    console.log("expressions results", inspect({ expressions, restOfTokens }));
-    return !expressions.length
-      ? acc
-      : iter([...acc, ...expressions], restOfTokens);
+    const [expression, restOfTokens] = parseExression(tokens);
+    return !expression ? acc : iter([...acc, expression], restOfTokens);
   })([], tokens);
 };
 
