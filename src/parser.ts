@@ -4,41 +4,51 @@ debug.on = true;
 
 type Expression = {
   type: string;
-  value: any;
+  value: Value;
   whiteSpace: string;
 };
 
+type Value = string | Token | Expression | ValueInterface | null;
+
+interface ValueInterface {
+  [key: string]: Value;
+}
+
 type ParseExpression = [Expression | null, Token[]];
 
-const wrapExpression = (type, value, whiteSpace): Expression => ({
+const wrapExpression = (
+  type: string,
+  value: Value,
+  whiteSpace: string
+): Expression => ({
   type,
   value,
   whiteSpace,
 });
 
-const isAssignment = (tokens) => {
+const isAssignment = (tokens: Token[]) => {
   const [token, next] = tokens;
-  return token?.value === "=" && next;
+  return token?.value === "=" && Boolean(next);
 };
 
-const parseAssignment = (id, tokens): ParseExpression => {
+const parseAssignment = (id: Token, tokens: Token[]): ParseExpression => {
   const [_eq, ...rest1] = tokens;
-  const [expression, ...rest2] = parseExression(rest1);
+  const [expression, rest2] = parseExression(rest1);
   return [
     wrapExpression("assignment", { id: id.value, expression }, id.white),
-    ...rest2,
+    rest2,
   ];
 };
 
-const parseId = (id, tokens): ParseExpression => {
+const parseId = (id: Token, tokens: Token[]): ParseExpression => {
   return [wrapExpression("id", id.value, id.white), tokens];
 };
 
-const parseEnd = (end): ParseExpression => {
+const parseEnd = (end: Token): ParseExpression => {
   return [wrapExpression("end", null, end.white), []];
 };
 
-const parseIf = (ifToken, tokens): ParseExpression => {
+const parseIf = (ifToken: Token, tokens: Token[]): ParseExpression => {
   const [conditional, [_thenToken, ...rest1]] = parseExression(tokens);
   const [consequent, [maybeElseToken, ...rest2]] = parseExression(rest1);
   if (maybeElseToken.value !== "else") {
@@ -54,6 +64,21 @@ const parseIf = (ifToken, tokens): ParseExpression => {
   ];
 };
 
+const parseSequence = (rightCurly: Token, tokens: Token[]): ParseExpression => {
+  const [expressions, restTokens] = y((iter) => (acc, tokens2) => {
+    const [maybeLeftCurly, ...restTokens] = tokens2;
+    if (maybeLeftCurly.value === "}") {
+      return [acc, restTokens];
+    }
+    const [expr, rest2] = parseExression([maybeLeftCurly, ...restTokens]);
+    return iter([...acc, expr], rest2);
+  })([], tokens);
+  return [
+    wrapExpression("sequence", expressions, rightCurly.white),
+    restTokens,
+  ];
+};
+
 const parseExression = (tokens: Token[]): ParseExpression => {
   if (!tokens.length) return [null, []];
   const [token, ...rest] = tokens;
@@ -61,6 +86,9 @@ const parseExression = (tokens: Token[]): ParseExpression => {
     return parseEnd(token);
   }
   if (token.type === "syntax") {
+    if (token.value === "{") {
+      return parseSequence(token, rest);
+    }
   }
   if (token.type === "word") {
     if (token.value === "if") {
@@ -75,11 +103,12 @@ const parseExression = (tokens: Token[]): ParseExpression => {
   }
   if (token.type === "unknown") {
   }
-  return [null, []];
+  return [wrapExpression("unexpected", token, token.white), rest];
 };
 
-const parseProgram = (tokens: Token[]) => {
-  return y((iter) => (acc, tokens) => {
+type ParseProgramIter = (acc: Expression[], tokens: Token[]) => Expression[];
+const parseProgram = (tokens: Token[]): Expression[] => {
+  return y((iter: ParseProgramIter) => (acc: Expression[], tokens: Token[]) => {
     const [expression, restOfTokens] = parseExression(tokens);
     return !expression ? acc : iter([...acc, expression], restOfTokens);
   })([], tokens);

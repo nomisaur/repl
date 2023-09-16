@@ -1,1 +1,1 @@
-let a = if b then c
+a = {b a}

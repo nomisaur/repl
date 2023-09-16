@@ -100,7 +100,7 @@ const makeEndToken = (white) => ({
   white,
 });
 
-export const tokenize = (characters: string) => {
+export const tokenize = (characters: string): Token[] => {
   return y((iter) => (acc, tokens, previousWhite) => {
     const [first, ...rest] = tokens;
     if (!first) {
