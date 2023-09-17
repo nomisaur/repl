@@ -1,5 +1,6 @@
-import { y, log, debug, inspect } from "./utils";
+import { loop, log, debug, inspect } from "./utils";
 import { tokenize, Token } from "./tokenizer";
+import { syntaxMap } from "./syntax";
 debug.on = true;
 
 type Expression = {
@@ -14,9 +15,12 @@ const wrapExpression = (type: string, value: any): Expression => ({
   value,
 });
 
+const matches = (value: string, syntaxes: string[]): boolean =>
+  syntaxes.includes(value);
+
 const isAssignment = (tokens: Token[]) => {
   const [token, next] = tokens;
-  return token?.value === "=" && Boolean(next);
+  return matches(token?.value, syntaxMap.ASSIGN) && Boolean(next);
 };
 
 const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
@@ -29,9 +33,9 @@ const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
 };
 
 const parseId = (id_: Token, tokens: Token[]): ParseExpression => {
-  const id = wrapExpression("id", id_.value);
+  const id = wrapExpression("id", { value: id_.value, id_ });
   const [maybeArrow, ...restTokens] = tokens;
-  if (maybeArrow.value == "->") {
+  if (matches(maybeArrow.value, syntaxMap.LAMBDA)) {
     return parseLambda(null, [id], null, maybeArrow, restTokens);
   }
   return [id, tokens];
@@ -44,7 +48,7 @@ const parseEnd = (end_: Token): ParseExpression => {
 const parseIf = (if_: Token, tokens: Token[]): ParseExpression => {
   const [conditional, [then_, ...rest1]] = parseExression(tokens);
   const [consequent, [maybeElse_, ...rest2]] = parseExression(rest1);
-  if (maybeElse_.value !== "else") {
+  if (matches(maybeElse_.value, syntaxMap.ELSE)) {
     return [
       wrapExpression("if", {
         if_,
@@ -85,14 +89,14 @@ const destructureSequence = (
 const parseSequence = (
   open_: Token,
   tokens: Token[],
-  close: string
+  closeMatcher: (value: string) => boolean
 ): ParseExpression => {
   const iter = (acc, tokens) => {
     const [maybeClose_, ...restTokens] = tokens;
     if (maybeClose_.type === "end") {
       throw Error(`Missing '${close}'`);
     }
-    if (maybeClose_.value === close) {
+    if (closeMatcher(maybeClose_.value)) {
       return [acc, [maybeClose_, ...restTokens]];
     }
     const [expr, rest2] = parseExression([maybeClose_, ...restTokens]);
@@ -110,7 +114,9 @@ const parseSequence = (
 };
 
 const parseParens = (open_: Token, tokens: Token[]): ParseExpression => {
-  const [sequence, restTokens] = parseSequence(open_, tokens, ")");
+  const [sequence, restTokens] = parseSequence(open_, tokens, (value) =>
+    matches(value, syntaxMap.CLOSEFUNC)
+  );
   const [_, sequenceBody, close_] = destructureSequence(sequence);
   const [maybeArrow, ...restTokens2] = restTokens;
   if (sequenceBody === null) {
@@ -179,26 +185,26 @@ const parseExression = (tokens: Token[]): ParseExpression => {
     return parseEnd(token);
   }
   if (token.type === "syntax") {
-    if (token.value === "{") {
-      return parseSequence(token, rest, "}");
+    if (matches(token.value, syntaxMap.DEFINE)) {
+      return parseDefine(token, rest);
     }
-    if (token.value === "(") {
+    if (matches(token.value, syntaxMap.IF)) {
+      return parseIf(token, rest);
+    }
+    if (matches(token.value, syntaxMap.OPENSEQ)) {
+      return parseSequence(token, rest, (value) =>
+        matches(value, syntaxMap.CLOSESEQ)
+      );
+    }
+    if (matches(token.value, syntaxMap.OPENFUNC)) {
       return parseParens(token, rest);
     }
   }
   if (token.type === "word") {
-    if (token.value === "let") {
-      return parseDefine(token, rest);
-    }
-    if (token.value === "if") {
-      return parseIf(token, rest);
-    }
     if (isAssignment(rest)) {
       return parseAssignment(token, rest);
     }
     return parseId(token, rest);
-  }
-  if (token.type === "digit") {
   }
   if (token.type === "unknown") {
   }

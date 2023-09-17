@@ -34,7 +34,22 @@ export const toObject = (
   );
 };
 
-const m = (f) => f(f);
+// const m = (f) => f(f);
+const m = (f, ...args) => f(f, ...args);
 
-export const y = (func) =>
-  m((mFunc) => func((...args) => mFunc(mFunc)(...args)));
+// export const y = (func) =>
+//   m((mFunc) => func((...args) => mFunc(mFunc)(...args)));
+
+export const loop = (func, ...args) =>
+  m(
+    (mFunc, ...inner) => func((...args) => mFunc(mFunc, ...args), ...inner),
+    ...args
+  );
+
+// export const loop1 = (func, ...args) => y(func)(...args);
+
+// export const loop = (func, ...args) =>
+//   m((mFunc, ...args) => mFunc(mFunc, ...args))(...args);
+
+// export const loop = (func) =>
+//   m((mFunc) => func((...args) => mFunc(mFunc, ...args)));

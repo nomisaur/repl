@@ -1,5 +1,1 @@
-let myFunc = (a b) -> {
-  b
-}
-
-(myFunc c d)
+"hello"
