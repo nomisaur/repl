@@ -33,7 +33,7 @@ const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
 };
 
 const parseId = (id_: Token, tokens: Token[]): ParseExpression => {
-  const id = wrapExpression("id", { value: id_.value, id_ });
+  const id = wrapExpression("id", { id: id_.value, id_ });
   const [maybeArrow, ...restTokens] = tokens;
   if (matches(maybeArrow.value, syntaxMap.LAMBDA)) {
     return parseLambda(null, [id], null, maybeArrow, restTokens);
@@ -122,7 +122,7 @@ const parseParens = (open_: Token, tokens: Token[]): ParseExpression => {
   if (sequenceBody === null) {
     throw Error("should not be possible");
   }
-  if (maybeArrow.value === "->") {
+  if (matches(maybeArrow.value, syntaxMap.LAMBDA)) {
     return parseLambda(open_, sequenceBody, close_, maybeArrow, restTokens2);
   }
   //@ts-ignore

@@ -31,7 +31,7 @@ const whitespaceRegex = /^\s+/g;
 
 const commentRegex = /(^~{(.|\n)*}~)|(^~.*((?=\n)|$))/g;
 
-const matcher = (type, chars, regex) => {
+const matcher = (type, chars, regex): [RawToken, string] | null => {
   const result = chars.match(regex);
   if (result) {
     const [value] = result;
@@ -40,7 +40,7 @@ const matcher = (type, chars, regex) => {
   return null;
 };
 
-export const getNextToken = (characters) => {
+export const getNextRawToken = (characters): [RawToken, string] => {
   const ignored = matcher("ignored", characters, ignoredRegex);
   if (ignored) return ignored;
   const syntax = matcher("syntax", characters, syntaxRegex);
@@ -58,17 +58,6 @@ export const getNextToken = (characters) => {
     characters.slice(1),
   ];
 };
-
-const getAllTokens = (characters: string): RawToken[] =>
-  loop(
-    (next, acc, rest) => {
-      if (!rest.length) return acc;
-      const [token, leftovers] = getNextToken(rest);
-      return next([...acc, token], leftovers);
-    },
-    [],
-    characters
-  );
 
 const rollupIrrelevant = (tokens) =>
   loop(
@@ -90,9 +79,39 @@ const rollupIrrelevant = (tokens) =>
     [[], [], tokens]
   );
 
-export const tokenize = (characters: string): Token[] => {
-  const allTokens = getAllTokens(characters);
-  return rollupIrrelevant(allTokens);
-};
+export const getNextToken = (characters): [Token, string] =>
+  loop(
+    (next, irrelevant, chars) => {
+      if (chars === "") {
+        return [{ type: "end", value: "", irrelevant, isToken: true }, ""];
+      }
+      const [rawToken, rest] = getNextRawToken(chars);
+      if (
+        rawToken.type === "whitespace" ||
+        rawToken.type === "ignored" ||
+        rawToken.type === "comment"
+      ) {
+        return next([...irrelevant, rawToken], rest);
+      }
+      return [{ ...rawToken, irrelevant }, rest];
+    },
+    [],
+    characters
+  );
 
-const tokenizeStream = () => {};
+const getAllTokens = (characters: string): Token[] =>
+  loop(
+    (next, acc, rest) => {
+      const [token, leftovers] = getNextToken(rest);
+      if (token.type === "end") return [...acc, token];
+      return next([...acc, token], leftovers);
+    },
+    [],
+    characters
+  );
+
+export const tokenize = (characters: string): Token[] => {
+  const tokens = getAllTokens(characters);
+  console.log("tokens:", tokens);
+  return tokens;
+};

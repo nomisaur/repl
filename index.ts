@@ -9,7 +9,7 @@ import { inspect, log } from "./src/utils";
 
 const test = fs.readFileSync("./test.txt", { encoding: "utf8", flag: "r" });
 
-log("parse: ", parse(test));
+log("parse:", parse(test));
 
 // async function logChunks(readable) {
 //   let ok = [];
