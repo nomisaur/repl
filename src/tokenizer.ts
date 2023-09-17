@@ -11,7 +11,7 @@ export type Token = {
   type: "end" | "digit" | "word" | "syntax" | "unknown";
   value: string;
   isToken: true;
-  white: string;
+  whitespace: string;
 };
 
 const syntax =
@@ -88,20 +88,20 @@ const rawTokenize = (characters: string): RawToken[] => {
   })([], characters);
 };
 
-const addWhite = (token, white) => ({
+const addWhite = (token, whitespace) => ({
   ...token,
-  white,
+  whitespace,
 });
 
-const makeEndToken = (white) => ({
+const makeEndToken = (whitespace) => ({
   isToken: true,
   type: "end",
   value: null,
-  white,
+  whitespace,
 });
 
-export const tokenize = (characters: string): Token[] => {
-  return y((iter) => (acc, tokens, previousWhite) => {
+const prependWhitespace = (tokens): Token[] => {
+  const iter = (acc, tokens, previousWhite) => {
     const [first, ...rest] = tokens;
     if (!first) {
       return [...acc, makeEndToken(previousWhite)];
@@ -114,7 +114,14 @@ export const tokenize = (characters: string): Token[] => {
       return iter(acc, rest, first.value);
     }
     return iter([...acc, addWhite(first, previousWhite)], rest, "");
-  })([], rawTokenize(characters), "");
+  };
+  return iter([], tokens, "");
+};
+
+export const tokenize = (characters: string): Token[] => {
+  const allTokens = rawTokenize(characters);
+  const whitespacePrependedTokens = prependWhitespace(allTokens);
+  return whitespacePrependedTokens;
 };
 
 const tokenizeStream = () => {};
