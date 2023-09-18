@@ -311,39 +311,40 @@ const parseAccess = (
   tokens: Token[],
   acc
 ): ParseExpression => {
-  const [key, [colon2_, ...tokens2]] = parseExpression(tokens, [
+  const [key, [access2_, ...tokens2]] = parseExpression(tokens, [
     ...acc,
     { collection, access_ },
   ]);
   if (key?.type === "access") {
-    return [key, [colon2_, ...tokens2]];
+    return [key, [access2_, ...tokens2]];
   }
-  if (colon2_.value !== lex.ACCESS) {
+  if (access2_.value !== lex.ACCESS) {
     return [
       wrapExpression("access", [...acc, { collection, access_ }, { key }]),
-      [colon2_, ...tokens2],
+      [access2_, ...tokens2],
     ];
   }
   return [null, []];
 };
 
 const parseInfix = (
-  collection: Expression,
-  access_: Token,
+  expression: Expression,
+  op_: Token,
   tokens: Token[],
   acc
 ): ParseExpression => {
-  const [key, [colon2_, ...tokens2]] = parseExpression(tokens, [
+  const [key, [op2_, ...tokens2]] = parseExpression(tokens, [
     ...acc,
-    { collection, access_ },
+    expression,
+    op_,
   ]);
-  if (key?.type === "access") {
-    return [key, [colon2_, ...tokens2]];
+  if (key?.type === "infix") {
+    return [key, [op2_, ...tokens2]];
   }
-  if (colon2_.value !== lex.ACCESS) {
+  if (!infix.includes(key?.value)) {
     return [
-      wrapExpression("access", [...acc, { collection, access_ }, { key }]),
-      [colon2_, ...tokens2],
+      wrapExpression("infix", [...acc, expression, op_, key]),
+      [op2_, ...tokens2],
     ];
   }
   return [null, []];
@@ -369,6 +370,9 @@ const parseLookAheads = (token, rest): ParseExpression => {
       token.value === lex.NULL
     ) {
       return parsePrimitive(token, rest);
+    }
+    if (token.value === lex.NOT) {
+      return parseNot(token, rest);
     }
     if (
       token.value === lex.OPENSTRINGDOUBLE ||
@@ -406,6 +410,22 @@ const parseLookAheads = (token, rest): ParseExpression => {
   return [wrapExpression("unexpected", token), rest];
 };
 
+const parseLookBehinds = (
+  expression,
+  token,
+  tokens,
+  acc = []
+): ParseExpression => {
+  if (token.value === lex.ACCESS) {
+    return parseAccess(expression, token, tokens, acc);
+  }
+  if (infix.includes(token.value)) {
+    console.log("infix");
+    return parseInfix(expression, token, tokens, acc);
+  }
+  return [expression, [token, ...tokens]];
+};
+
 const parseExpression = (tokens: Token[], acc?: any): ParseExpression => {
   if (!tokens.length) return [null, []];
   const [token, ...rest] = tokens;
@@ -415,10 +435,7 @@ const parseExpression = (tokens: Token[], acc?: any): ParseExpression => {
   const [expression, tokens2] = parseLookAheads(token, rest);
   if (!tokens2.length || !expression) return [null, []];
   const [token2, ...rest2] = tokens2;
-  if (token2.value === lex.ACCESS) {
-    return parseAccess(expression, token2, rest2, acc || []);
-  }
-  return [expression, tokens2];
+  return parseLookBehinds(expression, token2, rest2, acc);
 };
 
 const parseProgram = (tokens: Token[]): Expression[] => {
