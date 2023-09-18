@@ -18,14 +18,14 @@ export const syntax = {
   OPENMAP: "#[",
   CLOSEMAP: "]",
   MAPDIVIDER: ":",
-  ACCESS: ";",
+  ACCESS: ".",
 
   OPENSTRINGDOUBLE: '"',
   CLOSESTRINGDOUBLE: '"',
   OPENSTRINGSINGLE: "'",
   CLOSESTRINGSINGE: "'",
   ESCAPE: "\\",
-  OPENINTERPOLATE: ".{",
+  OPENINTERPOLATE: "${",
   CLOSEINTERPOLATE: "}",
 
   IGNORED: ",",

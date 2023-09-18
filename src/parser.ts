@@ -284,9 +284,9 @@ const parseList = (open_: Token, tokens: Token[]): ParseExpression => {
 
 const parseMapPart = (tokens: Token[]): ParseExpression => {
   const [key, rest] = parseExpression(tokens);
-  const [colon_, ...rest2] = rest;
+  const [access_, ...rest2] = rest;
   const [val, rest3] = parseExpression(rest2);
-  return [wrapExpression("map-part", { key, colon_, val }), rest3];
+  return [wrapExpression("map-part", { key, access_, val }), rest3];
 };
 
 const parseMap = (open_: Token, tokens: Token[]): ParseExpression => {
@@ -310,20 +310,20 @@ const parseSequence = (open_: Token, tokens: Token[]): ParseExpression => {
 
 const parseAccess = (
   collection: Expression,
-  colon_: Token,
+  access_: Token,
   tokens: Token[],
   acc
 ): ParseExpression => {
   const [key, [colon2_, ...tokens2]] = parseExpression(tokens, [
     ...acc,
-    { collection, colon_ },
+    { collection, access_ },
   ]);
   if (key?.type === "access") {
     return [key, [colon2_, ...tokens2]];
   }
   if (colon2_.value !== syntax.ACCESS) {
     return [
-      wrapExpression("access", [...acc, { collection, colon_ }, { key }]),
+      wrapExpression("access", [...acc, { collection, access_ }, { key }]),
       [colon2_, ...tokens2],
     ];
   }
