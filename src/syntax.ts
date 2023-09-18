@@ -11,7 +11,7 @@ const syntaxList = syntaxFile
   .map((syntax) => syntax.split(/\s+/));
 
 export const syntaxMap = syntaxList.reduce(
-  (acc, [type, ...syntax]) => ({
+  (acc, [type, syntax]) => ({
     ...acc,
     [type]: syntax,
   }),
@@ -19,32 +19,34 @@ export const syntaxMap = syntaxList.reduce(
 ) as SyntaxMap;
 
 export type SyntaxMap = {
-  DEFINE: string[];
-  ASSIGN: string[];
+  DEFINE: string;
+  ASSIGN: string;
 
-  OPENSEQ: string[];
-  CLOSESEQ: string[];
+  OPENSEQ: string;
+  CLOSESEQ: string;
 
-  OPENFUNC: string[];
-  CLOSEFUNC: string[];
-  LAMBDA: string[];
+  OPENFUNC: string;
+  CLOSEFUNC: string;
+  LAMBDA: string;
 
-  IF: string[];
-  THEN: string[];
-  ELSE: string[];
+  IF: string;
+  THEN: string;
+  ELSE: string;
 
-  OPENLIST: string[];
-  CLOSELIST: string[];
-  OPENMAP: string[];
-  CLOSEMAP: string[];
+  OPENLIST: string;
+  CLOSELIST: string;
+  OPENMAP: string;
+  CLOSEMAP: string;
 
-  OPENSTRING: string[];
-  CLOSESTRING: string[];
-  ESCAPE: string[];
-  OPENINTERPOLATE: string[];
-  CLOSEINTERPOLATE: string[];
+  OPENSTRINGDOUBLE: string;
+  CLOSESTRINGDOUBLE: string;
+  OPENSTRINGSINGLE: string;
+  CLOSESTRINGSINGE: string;
+  ESCAPE: string;
+  OPENINTERPOLATE: string;
+  CLOSEINTERPOLATE: string;
 
-  IGNORED: string[];
+  IGNORED: string;
 };
 
 //@ts-ignore
@@ -55,9 +57,9 @@ const escapeRegExp = (text) => {
 };
 
 export const syntaxRegex = new RegExp(
-  `^(${Object.entries(nonTrivialSyntax)
+  `^(${Object.values(nonTrivialSyntax)
     //@ts-ignore
-    .flatMap(([type, syntax]) => syntax.map((s) => s), [])
+    // .flatMap(([type, syntax]) => syntax.map((s) => s), [])
     .sort((a, b) => b.length - a.length)
     .map(escapeRegExp)
     // .map((s) => s.split("").join("\\"))
@@ -65,6 +67,4 @@ export const syntaxRegex = new RegExp(
   "g"
 );
 
-export const ignoredRegex = new RegExp(
-  `^(${IGNORED.map(escapeRegExp).join("|")})`
-);
+export const ignoredRegex = new RegExp(`^(${escapeRegExp(IGNORED)})`);

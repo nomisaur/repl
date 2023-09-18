@@ -15,8 +15,7 @@ const wrapExpression = (type: string, value: any): Expression => ({
   value,
 });
 
-const matches = (value: string, syntaxes: string[]): boolean =>
-  syntaxes.includes(value);
+const matches = (value: string, syntax): boolean => value === syntax;
 
 const isAssignment = (tokens: Token[]) => {
   const [token, next] = tokens;
@@ -41,6 +40,10 @@ const parseId = (id_: Token, tokens: Token[]): ParseExpression => {
   return [id, tokens];
 };
 
+const parseNumber = (number_: Token, tokens: Token[]): ParseExpression => {
+  return [wrapExpression("number", { number: number_.value, number_ }), tokens];
+};
+
 const parseEnd = (end_: Token): ParseExpression => {
   return [wrapExpression("end", { end_ }), []];
 };
@@ -48,7 +51,7 @@ const parseEnd = (end_: Token): ParseExpression => {
 const parseIf = (if_: Token, tokens: Token[]): ParseExpression => {
   const [conditional, [then_, ...rest1]] = parseExression(tokens);
   const [consequent, [maybeElse_, ...rest2]] = parseExression(rest1);
-  if (matches(maybeElse_.value, syntaxMap.ELSE)) {
+  if (!matches(maybeElse_.value, syntaxMap.ELSE)) {
     return [
       wrapExpression("if", {
         if_,
@@ -91,18 +94,21 @@ const parseSequence = (
   tokens: Token[],
   closeMatcher: (value: string) => boolean
 ): ParseExpression => {
-  const iter = (acc, tokens) => {
-    const [maybeClose_, ...restTokens] = tokens;
-    if (maybeClose_.type === "end") {
-      throw Error(`Missing '${close}'`);
-    }
-    if (closeMatcher(maybeClose_.value)) {
-      return [acc, [maybeClose_, ...restTokens]];
-    }
-    const [expr, rest2] = parseExression([maybeClose_, ...restTokens]);
-    return iter([...acc, expr], rest2);
-  };
-  const [expressions, [close_, ...restTokens]] = iter([], tokens);
+  const [expressions, [close_, ...restTokens]] = loop(
+    (next, acc, tokens) => {
+      const [maybeClose_, ...restTokens] = tokens;
+      if (maybeClose_.type === "end") {
+        throw Error(`Missing '${close}'`);
+      }
+      if (closeMatcher(maybeClose_.value)) {
+        return [acc, [maybeClose_, ...restTokens]];
+      }
+      const [expr, rest2] = parseExression([maybeClose_, ...restTokens]);
+      return next([...acc, expr], rest2);
+    },
+    [],
+    tokens
+  );
   return [
     wrapExpression("sequence", {
       open_,
@@ -111,6 +117,78 @@ const parseSequence = (
     }),
     restTokens,
   ];
+};
+
+const isEscaped = (previousTokens, token, isPartEnd) => {
+  const escaped =
+    isPartEnd &&
+    loop(
+      (next, previousTokens, token, acc) => {
+        if (!previousTokens.length) return acc;
+        if (token.irrelevant.lenth) return acc;
+        const previousToken = previousTokens[previousTokens.length - 1];
+        if (previousToken.value !== syntaxMap.ESCAPE) return acc;
+        return next(previousTokens.slice(0, -1), previousToken, !acc);
+      },
+      previousTokens,
+      token,
+      false
+    );
+  return [escaped, escaped ? previousTokens.slice(0, -1) : previousTokens];
+};
+
+const parseEscapes = (text) => {
+  return text;
+};
+
+const parseStringPart = ([open_, ...tokens], close) =>
+  loop(
+    (next, acc, tokens) => {
+      const [token, ...rest] = tokens;
+      const isEnd = token.value === close;
+      const isInterpolate = token.value === syntaxMap.OPENINTERPOLATE;
+      const isPartEnd = isEnd || isInterpolate;
+      const [escaped, acc2] = isEscaped(acc, token, isPartEnd);
+      if (!escaped && isPartEnd) {
+        return [
+          isEnd,
+          wrapExpression("string-part", {
+            open_,
+            body: parseEscapes(
+              [...acc2, ...token.irrelevant].map((t) => t.value).join("")
+            ),
+            close_: { ...token, irrelevant: [] },
+          }),
+          rest,
+        ];
+      }
+      return next(
+        [...acc2, ...token.irrelevant, { ...token, irrelevant: [] }],
+        rest
+      );
+    },
+    [],
+    tokens
+  );
+
+const parseString = (open_: Token, tokens: Token[]): ParseExpression => {
+  const close =
+    open_.value === syntaxMap.OPENSTRINGDOUBLE
+      ? syntaxMap.CLOSESTRINGDOUBLE
+      : syntaxMap.CLOSESTRINGSINGE;
+  return loop(
+    (next, acc, tokens) => {
+      const [hasFinished, part, rest] = parseStringPart(tokens, close);
+      console.log("test", part.value.body);
+      if (hasFinished) {
+        return [wrapExpression("string", [...acc, part]), rest];
+      }
+      const [expression, rest2] = parseExression(rest);
+      return next([...acc, part, expression], rest2);
+    },
+    [],
+    [open_, ...tokens]
+  );
 };
 
 const parseParens = (open_: Token, tokens: Token[]): ParseExpression => {
@@ -184,7 +262,16 @@ const parseExression = (tokens: Token[]): ParseExpression => {
   if (token.type === "end") {
     return parseEnd(token);
   }
+  if (token.type === "number") {
+    return parseNumber(token, rest);
+  }
   if (token.type === "syntax") {
+    if (
+      token.value === syntaxMap.OPENSTRINGDOUBLE ||
+      token.value == syntaxMap.OPENSTRINGSINGLE
+    ) {
+      return parseString(token, rest);
+    }
     if (matches(token.value, syntaxMap.DEFINE)) {
       return parseDefine(token, rest);
     }
