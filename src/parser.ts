@@ -8,7 +8,9 @@ type Expression = {
   value: any;
 };
 
-type ParseExpression = [Expression | null, Token[]];
+type ParseExpression =
+  | [Expression | null, Token[]]
+  | [Expression | null, Token[], any];
 
 const wrapExpression = (type: string, value: any): Expression => ({
   type,
@@ -307,15 +309,25 @@ const parseSequence = (open_: Token, tokens: Token[]): ParseExpression => {
 };
 
 const parseAccess = (
+  collection: Expression,
   colon_: Token,
   tokens: Token[],
-  previousExpression: Expression
+  acc
 ): ParseExpression => {
-  const [key, rest] = parseExpression(tokens);
-  return [
-    wrapExpression("access", { collection: previousExpression, colon_, key }),
-    rest,
-  ];
+  const [key, [colon2_, ...tokens2]] = parseExpression(tokens, [
+    ...acc,
+    { collection, colon_ },
+  ]);
+  if (key?.type === "access") {
+    return [key, [colon2_, ...tokens2]];
+  }
+  if (colon2_.value !== syntaxMap.ACCESS) {
+    return [
+      wrapExpression("access", [...acc, { collection, colon_ }, key]),
+      [colon2_, ...tokens2],
+    ];
+  }
+  return [null, []];
 };
 
 const parseLookAheads = (token, rest): ParseExpression => {
@@ -356,7 +368,7 @@ const parseLookAheads = (token, rest): ParseExpression => {
   return [wrapExpression("unexpected", token), rest];
 };
 
-const parseExpression = (tokens: Token[]): ParseExpression => {
+const parseExpression = (tokens: Token[], acc?: any): ParseExpression => {
   if (!tokens.length) return [null, []];
   const [token, ...rest] = tokens;
   if (token.type === "end") {
@@ -366,14 +378,14 @@ const parseExpression = (tokens: Token[]): ParseExpression => {
   if (!tokens2.length || !expression) return [null, []];
   const [token2, ...rest2] = tokens2;
   if (token2.value === syntaxMap.ACCESS) {
-    return parseAccess(token, rest2, expression);
+    return parseAccess(expression, token2, rest2, acc || []);
   }
-  return [expression, rest];
+  return [expression, tokens2];
 };
 
 const parseProgram = (tokens: Token[]): Expression[] => {
   const iter = (acc: Expression[], tokens: Token[]): Expression[] => {
-    const [expression, restOfTokens] = parseExpression(tokens);
+    const [expression, restOfTokens] = parseExpression(tokens, []);
     return !expression ? acc : iter([...acc, expression], restOfTokens);
   };
   return iter([], tokens);
