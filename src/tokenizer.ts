@@ -59,26 +59,6 @@ export const getNextRawToken = (characters): [RawToken, string] => {
   ];
 };
 
-const rollupIrrelevant = (tokens) =>
-  loop(
-    (next, [accTokens, irrelevant, tokens]) => {
-      if (!tokens.length)
-        return [
-          ...accTokens,
-          { type: "end", value: "", irrelevant, isToken: true },
-        ];
-      const [token, ...rest] = tokens;
-      return next(
-        token.type === "whitespace" ||
-          token.type === "ignored" ||
-          token.type === "comment"
-          ? [accTokens, [...irrelevant, token], rest]
-          : [[...accTokens, { ...token, irrelevant }], [], rest]
-      );
-    },
-    [[], [], tokens]
-  );
-
 export const getNextToken = (characters): [Token, string] =>
   loop(
     (next, irrelevant, chars) => {
