@@ -28,6 +28,20 @@ export const syntax = {
   OPENINTERPOLATE: "${",
   CLOSEINTERPOLATE: "}",
 
+  NULL: "null",
+
+  TRUE: "true",
+  FALSE: "false",
+  BEQ: "==",
+  AND: "&",
+  OR: "|",
+
+  ADD: "+",
+  SUBTRACT: "-",
+  MULTIPLY: "*",
+  DIVIDE: "/",
+  EXPONENT: "^",
+
   IGNORED: ",",
 };
 

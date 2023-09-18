@@ -17,11 +17,9 @@ const wrapExpression = (type: string, value: any): Expression => ({
   value,
 });
 
-const matches = (value: string, syntax): boolean => value === syntax;
-
 const isAssignment = (tokens: Token[]) => {
   const [token, next] = tokens;
-  return matches(token?.value, syntax.ASSIGN) && Boolean(next);
+  return token?.value === syntax.ASSIGN && Boolean(next);
 };
 
 const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
@@ -36,7 +34,7 @@ const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
 const parseId = (id_: Token, tokens: Token[]): ParseExpression => {
   const id = wrapExpression("id", { id: id_.value, id_ });
   const [maybeArrow, ...restTokens] = tokens;
-  if (matches(maybeArrow.value, syntax.LAMBDA)) {
+  if (maybeArrow.value === syntax.LAMBDA) {
     return parseLambda(null, [id], null, maybeArrow, restTokens);
   }
   return [id, tokens];
@@ -53,7 +51,7 @@ const parseEnd = (end_: Token): ParseExpression => {
 const parseIf = (if_: Token, tokens: Token[]): ParseExpression => {
   const [conditional, [then_, ...rest1]] = parseExpression(tokens);
   const [consequent, [maybeElse_, ...rest2]] = parseExpression(rest1);
-  if (!matches(maybeElse_.value, syntax.ELSE)) {
+  if (maybeElse_.value !== syntax.ELSE) {
     return [
       wrapExpression("if", {
         if_,
@@ -211,13 +209,13 @@ const parseParens = (open_: Token, tokens: Token[]): ParseExpression => {
   const [_, sequence, close_, restTokens] = getSequence(
     open_,
     tokens,
-    (value) => matches(value, syntax.CLOSEFUNC)
+    (value) => value === syntax.CLOSEFUNC
   );
   const [maybeArrow, ...restTokens2] = restTokens;
   if (sequence === null) {
     throw Error("should not be possible");
   }
-  if (matches(maybeArrow.value, syntax.LAMBDA)) {
+  if (maybeArrow.value === syntax.LAMBDA) {
     return parseLambda(open_, sequence, close_, maybeArrow, restTokens2);
   }
   //@ts-ignore
@@ -341,16 +339,16 @@ const parseLookAheads = (token, rest): ParseExpression => {
     ) {
       return parseString(token, rest);
     }
-    if (matches(token.value, syntax.DEFINE)) {
+    if (token.value === syntax.DEFINE) {
       return parseDefine(token, rest);
     }
-    if (matches(token.value, syntax.IF)) {
+    if (token.value === syntax.IF) {
       return parseIf(token, rest);
     }
-    if (matches(token.value, syntax.OPENSEQ)) {
+    if (token.value === syntax.OPENSEQ) {
       return parseSequence(token, rest);
     }
-    if (matches(token.value, syntax.OPENFUNC)) {
+    if (token.value === syntax.OPENFUNC) {
       return parseParens(token, rest);
     }
     if (token.value === syntax.OPENLIST) {
