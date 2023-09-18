@@ -137,9 +137,43 @@ const isEscaped = (previousTokens, token, isPartEnd) => {
   return [escaped, escaped ? previousTokens.slice(0, -1) : previousTokens];
 };
 
-const parseEscapes = (text) => {
-  return text;
-};
+const parseEscapes = (text) =>
+  text
+    .split("")
+    .reduce(
+      ([acc, escaped], char) => {
+        if (!escaped && char === syntaxMap.ESCAPE) {
+          return [acc, true];
+        }
+        // \b	Backspace
+        // \f	Form Feed
+        // \n	New Line
+        // \r	Carriage Return
+        // \t	Horizontal Tabulator
+        // \v	Vertical Tabulator
+        if (escaped && char === "b") {
+          return [[...acc, "\b"], false];
+        }
+        if (escaped && char === "f") {
+          return [[...acc, "\f"], false];
+        }
+        if (escaped && char === "n") {
+          return [[...acc, "\n"], false];
+        }
+        if (escaped && char === "r") {
+          return [[...acc, "\b"], false];
+        }
+        if (escaped && char === "t") {
+          return [[...acc, "\b"], false];
+        }
+        if (escaped && char === "v") {
+          return [[...acc, "\b"], false];
+        }
+        return [[...acc, char], false];
+      },
+      [[], false]
+    )[0]
+    .join("");
 
 const parseStringPart = ([open_, ...tokens], close) =>
   loop(
