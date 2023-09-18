@@ -1,4 +1,4 @@
-export const syntax = {
+const syntax = {
   DEFINE: "let",
   ASSIGN: "=",
 
@@ -28,31 +28,56 @@ export const syntax = {
   OPENINTERPOLATE: "${",
   CLOSEINTERPOLATE: "}",
 
-  NULL: "null",
+  IGNORED: ",",
+};
 
+export const primitive = {
+  NULL: "null",
   TRUE: "true",
   FALSE: "false",
+};
+
+const unary = {
+  NOT: "!",
+};
+
+const infixes = {
   BEQ: "==",
+  NOTEQ: "!=",
   AND: "&",
   OR: "|",
+
+  LESSTHAN: "<",
+  GREATERTHAN: ">",
+  LESSTHANOREQ: "<=",
+  GREATERTHANOREQ: ">=",
 
   ADD: "+",
   SUBTRACT: "-",
   MULTIPLY: "*",
   DIVIDE: "/",
   EXPONENT: "^",
+};
 
-  IGNORED: ",",
+export const priority = [];
+
+export const infix = Object.values(infixes);
+
+export const lex = {
+  ...syntax,
+  ...primitive,
+  ...unary,
+  ...infixes,
 };
 
 //@ts-ignore
-const { IGNORED, ...nonTrivialSyntax } = syntax;
+const { IGNORED, ...nonTrivialSyntax } = lex;
 
 const escapeRegExp = (text) => {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 };
 
-export const syntaxRegex = new RegExp(
+export const lexRegex = new RegExp(
   `^(${Object.values(nonTrivialSyntax)
     //@ts-ignore
     // .flatMap(([type, syntax]) => syntax.map((s) => s), [])

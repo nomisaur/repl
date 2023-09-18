@@ -1,6 +1,6 @@
 import { loop } from "./utils";
 
-import { syntaxRegex, ignoredRegex } from "./syntax";
+import { lexRegex, ignoredRegex } from "./syntax";
 
 type RawToken = {
   type:
@@ -43,7 +43,7 @@ const matcher = (type, chars, regex): [RawToken, string] | null => {
 export const getNextRawToken = (characters): [RawToken, string] => {
   const ignored = matcher("ignored", characters, ignoredRegex);
   if (ignored) return ignored;
-  const syntax = matcher("syntax", characters, syntaxRegex);
+  const syntax = matcher("lex", characters, lexRegex);
   if (syntax) return syntax;
   const number = matcher("number", characters, numberRegex);
   if (number) return number;
