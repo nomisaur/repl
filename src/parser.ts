@@ -306,15 +306,19 @@ const parseSequence = (open_: Token, tokens: Token[]): ParseExpression => {
   return [wrapExpression("sequence", { open_, body, close_ }), restTokens];
 };
 
-const parseExpression = (tokens: Token[]): ParseExpression => {
-  if (!tokens.length) return [null, []];
-  const [token, ...rest] = tokens;
-  if (token.type === "end") {
-    return parseEnd(token);
-  }
-  if (token.type === "number") {
-    return parseNumber(token, rest);
-  }
+const parseAccess = (
+  colon_: Token,
+  tokens: Token[],
+  previousExpression: Expression
+): ParseExpression => {
+  const [key, rest] = parseExpression(tokens);
+  return [
+    wrapExpression("access", { collection: previousExpression, colon_, key }),
+    rest,
+  ];
+};
+
+const parseLookAheads = (token, rest): ParseExpression => {
   if (token.type === "syntax") {
     if (
       token.value === syntaxMap.OPENSTRINGDOUBLE ||
@@ -350,6 +354,21 @@ const parseExpression = (tokens: Token[]): ParseExpression => {
   if (token.type === "unknown") {
   }
   return [wrapExpression("unexpected", token), rest];
+};
+
+const parseExpression = (tokens: Token[]): ParseExpression => {
+  if (!tokens.length) return [null, []];
+  const [token, ...rest] = tokens;
+  if (token.type === "end") {
+    return parseEnd(token);
+  }
+  const [expression, tokens2] = parseLookAheads(token, rest);
+  if (!tokens2.length || !expression) return [null, []];
+  const [token2, ...rest2] = tokens2;
+  if (token2.value === syntaxMap.ACCESS) {
+    return parseAccess(token, rest2, expression);
+  }
+  return [expression, rest];
 };
 
 const parseProgram = (tokens: Token[]): Expression[] => {

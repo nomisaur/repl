@@ -38,6 +38,7 @@ export type SyntaxMap = {
   OPENMAP: string;
   CLOSEMAP: string;
   MAPDIVIDER: string;
+  ACCESS: string;
 
   OPENSTRINGDOUBLE: string;
   CLOSESTRINGDOUBLE: string;
