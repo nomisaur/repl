@@ -331,6 +331,9 @@ const parseAccess = (
 };
 
 const parseLookAheads = (token, rest): ParseExpression => {
+  if (token.type === "number") {
+    return parseNumber(token, rest);
+  }
   if (token.type === "syntax") {
     if (
       token.value === syntax.OPENSTRINGDOUBLE ||
