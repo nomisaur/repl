@@ -1,6 +1,6 @@
 import { loop, log, debug, inspect } from "./utils";
 import { tokenize, Token } from "./tokenizer";
-import { syntaxMap } from "./syntax";
+import { syntax } from "./syntax";
 debug.on = true;
 
 type Expression = {
@@ -21,7 +21,7 @@ const matches = (value: string, syntax): boolean => value === syntax;
 
 const isAssignment = (tokens: Token[]) => {
   const [token, next] = tokens;
-  return matches(token?.value, syntaxMap.ASSIGN) && Boolean(next);
+  return matches(token?.value, syntax.ASSIGN) && Boolean(next);
 };
 
 const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
@@ -36,7 +36,7 @@ const parseAssignment = (id_: Token, tokens: Token[]): ParseExpression => {
 const parseId = (id_: Token, tokens: Token[]): ParseExpression => {
   const id = wrapExpression("id", { id: id_.value, id_ });
   const [maybeArrow, ...restTokens] = tokens;
-  if (matches(maybeArrow.value, syntaxMap.LAMBDA)) {
+  if (matches(maybeArrow.value, syntax.LAMBDA)) {
     return parseLambda(null, [id], null, maybeArrow, restTokens);
   }
   return [id, tokens];
@@ -53,7 +53,7 @@ const parseEnd = (end_: Token): ParseExpression => {
 const parseIf = (if_: Token, tokens: Token[]): ParseExpression => {
   const [conditional, [then_, ...rest1]] = parseExpression(tokens);
   const [consequent, [maybeElse_, ...rest2]] = parseExpression(rest1);
-  if (!matches(maybeElse_.value, syntaxMap.ELSE)) {
+  if (!matches(maybeElse_.value, syntax.ELSE)) {
     return [
       wrapExpression("if", {
         if_,
@@ -110,7 +110,7 @@ const isEscaped = (previousTokens, token, isPartEnd) => {
         if (!previousTokens.length) return acc;
         if (token.irrelevant.lenth) return acc;
         const previousToken = previousTokens[previousTokens.length - 1];
-        if (previousToken.value !== syntaxMap.ESCAPE) return acc;
+        if (previousToken.value !== syntax.ESCAPE) return acc;
         return next(previousTokens.slice(0, -1), previousToken, !acc);
       },
       previousTokens,
@@ -125,7 +125,7 @@ const parseEscapes = (text) =>
     .split("")
     .reduce(
       ([acc, escaped], char) => {
-        if (!escaped && char === syntaxMap.ESCAPE) {
+        if (!escaped && char === syntax.ESCAPE) {
           return [acc, true];
         }
         // \b	Backspace
@@ -163,7 +163,7 @@ const parseStringPart = ([open_, ...tokens], close) =>
     (next, acc, tokens) => {
       const [token, ...rest] = tokens;
       const isEnd = token.value === close;
-      const isInterpolate = token.value === syntaxMap.OPENINTERPOLATE;
+      const isInterpolate = token.value === syntax.OPENINTERPOLATE;
       const isPartEnd = isEnd || isInterpolate;
       const [escaped, acc2] = isEscaped(acc, token, isPartEnd);
       if (!escaped && isPartEnd) {
@@ -190,9 +190,9 @@ const parseStringPart = ([open_, ...tokens], close) =>
 
 const parseString = (open_: Token, tokens: Token[]): ParseExpression => {
   const close =
-    open_.value === syntaxMap.OPENSTRINGDOUBLE
-      ? syntaxMap.CLOSESTRINGDOUBLE
-      : syntaxMap.CLOSESTRINGSINGE;
+    open_.value === syntax.OPENSTRINGDOUBLE
+      ? syntax.CLOSESTRINGDOUBLE
+      : syntax.CLOSESTRINGSINGE;
   return loop(
     (next, acc, tokens) => {
       const [hasFinished, part, rest] = parseStringPart(tokens, close);
@@ -211,13 +211,13 @@ const parseParens = (open_: Token, tokens: Token[]): ParseExpression => {
   const [_, sequence, close_, restTokens] = getSequence(
     open_,
     tokens,
-    (value) => matches(value, syntaxMap.CLOSEFUNC)
+    (value) => matches(value, syntax.CLOSEFUNC)
   );
   const [maybeArrow, ...restTokens2] = restTokens;
   if (sequence === null) {
     throw Error("should not be possible");
   }
-  if (matches(maybeArrow.value, syntaxMap.LAMBDA)) {
+  if (matches(maybeArrow.value, syntax.LAMBDA)) {
     return parseLambda(open_, sequence, close_, maybeArrow, restTokens2);
   }
   //@ts-ignore
@@ -277,7 +277,7 @@ const parseList = (open_: Token, tokens: Token[]): ParseExpression => {
   const [_, body, close_, restTokens] = getSequence(
     open_,
     tokens,
-    (c) => c === syntaxMap.CLOSELIST
+    (c) => c === syntax.CLOSELIST
   );
   return [wrapExpression("list", { open_, body, close_ }), restTokens];
 };
@@ -293,7 +293,7 @@ const parseMap = (open_: Token, tokens: Token[]): ParseExpression => {
   const [_, body, close_, restTokens] = getSequence(
     open_,
     tokens,
-    (c) => c === syntaxMap.CLOSEMAP,
+    (c) => c === syntax.CLOSEMAP,
     parseMapPart
   );
   return [wrapExpression("map", { open_, body, close_ }), restTokens];
@@ -303,7 +303,7 @@ const parseSequence = (open_: Token, tokens: Token[]): ParseExpression => {
   const [_, body, close_, restTokens] = getSequence(
     open_,
     tokens,
-    (c) => c === syntaxMap.CLOSESEQ
+    (c) => c === syntax.CLOSESEQ
   );
   return [wrapExpression("sequence", { open_, body, close_ }), restTokens];
 };
@@ -321,9 +321,9 @@ const parseAccess = (
   if (key?.type === "access") {
     return [key, [colon2_, ...tokens2]];
   }
-  if (colon2_.value !== syntaxMap.ACCESS) {
+  if (colon2_.value !== syntax.ACCESS) {
     return [
-      wrapExpression("access", [...acc, { collection, colon_ }, key]),
+      wrapExpression("access", [...acc, { collection, colon_ }, { key }]),
       [colon2_, ...tokens2],
     ];
   }
@@ -333,27 +333,27 @@ const parseAccess = (
 const parseLookAheads = (token, rest): ParseExpression => {
   if (token.type === "syntax") {
     if (
-      token.value === syntaxMap.OPENSTRINGDOUBLE ||
-      token.value == syntaxMap.OPENSTRINGSINGLE
+      token.value === syntax.OPENSTRINGDOUBLE ||
+      token.value == syntax.OPENSTRINGSINGLE
     ) {
       return parseString(token, rest);
     }
-    if (matches(token.value, syntaxMap.DEFINE)) {
+    if (matches(token.value, syntax.DEFINE)) {
       return parseDefine(token, rest);
     }
-    if (matches(token.value, syntaxMap.IF)) {
+    if (matches(token.value, syntax.IF)) {
       return parseIf(token, rest);
     }
-    if (matches(token.value, syntaxMap.OPENSEQ)) {
+    if (matches(token.value, syntax.OPENSEQ)) {
       return parseSequence(token, rest);
     }
-    if (matches(token.value, syntaxMap.OPENFUNC)) {
+    if (matches(token.value, syntax.OPENFUNC)) {
       return parseParens(token, rest);
     }
-    if (token.value === syntaxMap.OPENLIST) {
+    if (token.value === syntax.OPENLIST) {
       return parseList(token, rest);
     }
-    if (token.value === syntaxMap.OPENMAP) {
+    if (token.value === syntax.OPENMAP) {
       return parseMap(token, rest);
     }
   }
@@ -377,7 +377,7 @@ const parseExpression = (tokens: Token[], acc?: any): ParseExpression => {
   const [expression, tokens2] = parseLookAheads(token, rest);
   if (!tokens2.length || !expression) return [null, []];
   const [token2, ...rest2] = tokens2;
-  if (token2.value === syntaxMap.ACCESS) {
+  if (token2.value === syntax.ACCESS) {
     return parseAccess(expression, token2, rest2, acc || []);
   }
   return [expression, tokens2];

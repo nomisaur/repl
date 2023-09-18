@@ -1,58 +1,38 @@
-import fs from "fs";
+export const syntax = {
+  DEFINE: "let",
+  ASSIGN: "=",
 
-const syntaxFile = fs.readFileSync(__dirname + "/syntax.txt", {
-  encoding: "utf8",
-  flag: "r",
-});
+  OPENSEQ: "{",
+  CLOSESEQ: "}",
 
-const syntaxList = syntaxFile
-  .split("\n")
-  .filter((a) => a)
-  .map((syntax) => syntax.split(/\s+/));
+  OPENFUNC: "(",
+  CLOSEFUNC: ")",
+  LAMBDA: "->",
 
-export const syntaxMap = syntaxList.reduce(
-  (acc, [type, syntax]) => ({
-    ...acc,
-    [type]: syntax,
-  }),
-  {}
-) as SyntaxMap;
+  IF: "if",
+  THEN: "then",
+  ELSE: "else",
 
-export type SyntaxMap = {
-  DEFINE: string;
-  ASSIGN: string;
+  OPENLIST: "[",
+  CLOSELIST: "]",
+  OPENMAP: "#[",
+  CLOSEMAP: "]",
+  MAPDIVIDER: ":",
+  ACCESS: ";",
 
-  OPENSEQ: string;
-  CLOSESEQ: string;
+  OPENSTRINGDOUBLE: '"',
+  CLOSESTRINGDOUBLE: '"',
+  OPENSTRINGSINGLE: "'",
+  CLOSESTRINGSINGE: "'",
+  ESCAPE: "\\",
+  OPENINTERPOLATE: ".{",
+  CLOSEINTERPOLATE: "}",
 
-  OPENFUNC: string;
-  CLOSEFUNC: string;
-  LAMBDA: string;
-
-  IF: string;
-  THEN: string;
-  ELSE: string;
-
-  OPENLIST: string;
-  CLOSELIST: string;
-  OPENMAP: string;
-  CLOSEMAP: string;
-  MAPDIVIDER: string;
-  ACCESS: string;
-
-  OPENSTRINGDOUBLE: string;
-  CLOSESTRINGDOUBLE: string;
-  OPENSTRINGSINGLE: string;
-  CLOSESTRINGSINGE: string;
-  ESCAPE: string;
-  OPENINTERPOLATE: string;
-  CLOSEINTERPOLATE: string;
-
-  IGNORED: string;
+  IGNORED: ",",
 };
 
 //@ts-ignore
-const { IGNORED, ...nonTrivialSyntax } = syntaxMap;
+const { IGNORED, ...nonTrivialSyntax } = syntax;
 
 const escapeRegExp = (text) => {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
