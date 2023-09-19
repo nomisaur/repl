@@ -327,6 +327,10 @@ const parseAccess = (
   return [null, []];
 };
 
+const parseInfixChain = (chain) => {
+  return chain;
+};
+
 const parseInfix = (
   expression: Expression,
   op_: Token,
@@ -343,7 +347,7 @@ const parseInfix = (
   }
   if (!infix.includes(key?.value)) {
     return [
-      wrapExpression("infix", [...acc, expression, op_, key]),
+      wrapExpression("infix", parseInfixChain([...acc, expression, op_, key])),
       [op2_, ...tokens2],
     ];
   }
@@ -354,9 +358,9 @@ const parsePrimitive = (token_: Token, rest: Token[]): ParseExpression => {
   return [wrapExpression("primitive", { val: token_.value, token_ }), rest];
 };
 
-const parseNot = (not_: Token, tokens: Token[]): ParseExpression => {
-  const [expression, rest] = parseExpression(tokens);
-  return [wrapExpression("not", { not_, expression }), rest];
+const parseUnary = (op_: Token, tokens: Token[]): ParseExpression => {
+  const [expression, rest] = parseExpression(tokens, [], true);
+  return [wrapExpression("unary", { op_, expression }), rest];
 };
 
 const parseLookAheads = (token, rest): ParseExpression => {
@@ -371,8 +375,8 @@ const parseLookAheads = (token, rest): ParseExpression => {
     ) {
       return parsePrimitive(token, rest);
     }
-    if (token.value === lex.NOT) {
-      return parseNot(token, rest);
+    if (token.value === "-" || token.value === "+" || token.value === lex.NOT) {
+      return parseUnary(token, rest);
     }
     if (
       token.value === lex.OPENSTRINGDOUBLE ||
@@ -426,7 +430,11 @@ const parseLookBehinds = (
   return [expression, [token, ...tokens]];
 };
 
-const parseExpression = (tokens: Token[], acc?: any): ParseExpression => {
+const parseExpression = (
+  tokens: Token[],
+  acc?: any,
+  skipLookBehinds?: boolean
+): ParseExpression => {
   if (!tokens.length) return [null, []];
   const [token, ...rest] = tokens;
   if (token.type === "end") {
@@ -435,7 +443,10 @@ const parseExpression = (tokens: Token[], acc?: any): ParseExpression => {
   const [expression, tokens2] = parseLookAheads(token, rest);
   if (!tokens2.length || !expression) return [null, []];
   const [token2, ...rest2] = tokens2;
-  return parseLookBehinds(expression, token2, rest2, acc);
+  if (!skipLookBehinds) {
+    return parseLookBehinds(expression, token2, rest2, acc);
+  }
+  return [expression, tokens2];
 };
 
 const parseProgram = (tokens: Token[]): Expression[] => {

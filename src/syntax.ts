@@ -56,10 +56,24 @@ const infixes = {
   SUBTRACT: "-",
   MULTIPLY: "*",
   DIVIDE: "/",
+  MODULO: "%",
   EXPONENT: "^",
 };
 
-export const priority = [];
+export const priority = [
+  [infixes.EXPONENT],
+  [infixes.MULTIPLY, infixes.DIVIDE, infixes.MODULO],
+  [infixes.ADD, infixes.SUBTRACT],
+  [
+    infixes.LESSTHAN,
+    infixes.GREATERTHAN,
+    infixes.LESSTHANOREQ,
+    infixes.GREATERTHANOREQ,
+  ],
+  [infixes.BEQ, infixes.NOTEQ],
+  [infixes.AND],
+  [infixes.OR],
+];
 
 export const infix = Object.values(infixes);
 

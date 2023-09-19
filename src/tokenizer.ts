@@ -25,7 +25,7 @@ export type Token = {
 const numberRegex =
   /(^(\d)(\d|(,\d))*(.((\d)(\d|(,\d))*)){0,1})|(^(\.)(\d|(,\d))+)/g;
 
-const wordRegex = /^[A-Za-z_]\w*/g;
+const wordRegex = /^[A-Za-z_?]\w*/g;
 
 const whitespaceRegex = /^\s+/g;
 
