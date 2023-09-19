@@ -451,5 +451,7 @@ const parseProgram = (tokens: Token[]): Expression[] => {
 
 export const parse = (code: string) => {
   const tokens = tokenize(code);
-  return parseProgram(tokens);
+  const parseTree = parseProgram(tokens);
+  // console.log(inspect(parseTree));
+  return parseTree;
 };

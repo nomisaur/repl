@@ -6,10 +6,11 @@ import fs from "fs";
 import { parse } from "./src/parser";
 import { tokenize, getNextToken } from "./src/tokenizer";
 import { inspect, log } from "./src/utils";
+import { evaluate } from "./src/evaluator";
 
 const test = fs.readFileSync("./test.txt", { encoding: "utf8", flag: "r" });
 
-log("parse:", parse(test));
+console.log(evaluate(test));
 
 // async function logChunks(readable) {
 //   let ok = [];

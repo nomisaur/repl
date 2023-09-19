@@ -92,6 +92,6 @@ const getAllTokens = (characters: string): Token[] =>
 
 export const tokenize = (characters: string): Token[] => {
   const tokens = getAllTokens(characters);
-  console.log("tokens:", tokens);
+  // console.log("tokens:", tokens);
   return tokens;
 };
