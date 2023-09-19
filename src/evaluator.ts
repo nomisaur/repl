@@ -29,5 +29,5 @@ const eval_ = (expr, env) => {
 export const evaluate = (text) => {
   const ast = parse(text);
   const result = ast.map(eval_);
-  return result;
+  return result[0];
 };
