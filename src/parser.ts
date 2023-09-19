@@ -1,6 +1,6 @@
 import { loop, log, debug, inspect } from "./utils";
 import { tokenize, Token } from "./tokenizer";
-import { lex, infix } from "./syntax";
+import { lex, infix, priority } from "./syntax";
 
 type Expression = {
   type: string;
@@ -327,8 +327,26 @@ const parseAccess = (
   return [null, []];
 };
 
+//for each priority level,
+// go through chain, check if there
+
 const parseInfixChain = (chain) => {
-  return chain;
+  const result = priority.reduce((chain, level) => {
+    return loop(
+      (next, feed, acc) => {
+        const [expr1, op_, expr2, ...rest] = feed;
+        if (!op_) return [...acc, ...feed];
+        const isMatch = level.includes(op_.value);
+        const group = wrapExpression("infix", { expr1, op_, expr2 });
+        const nextAcc = isMatch ? acc : [...acc, expr1, op_];
+        const nextFeed = isMatch ? [group, ...rest] : [expr2, ...rest];
+        return next(nextFeed, nextAcc);
+      },
+      chain,
+      []
+    );
+  }, chain)[0];
+  return result;
 };
 
 const parseInfix = (
@@ -347,7 +365,7 @@ const parseInfix = (
   }
   if (!infix.includes(key?.value)) {
     return [
-      wrapExpression("infix", parseInfixChain([...acc, expression, op_, key])),
+      parseInfixChain([...acc, expression, op_, key]),
       [op2_, ...tokens2],
     ];
   }
@@ -424,7 +442,6 @@ const parseLookBehinds = (
     return parseAccess(expression, token, tokens, acc);
   }
   if (infix.includes(token.value)) {
-    console.log("infix");
     return parseInfix(expression, token, tokens, acc);
   }
   return [expression, [token, ...tokens]];
