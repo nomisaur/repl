@@ -305,28 +305,6 @@ const parseSequence = (open_: Token, tokens: Token[]): ParseExpression => {
   return [wrapExpression("sequence", { open_, body, close_ }), restTokens];
 };
 
-const parseAccess = (
-  collection: Expression,
-  access_: Token,
-  tokens: Token[],
-  acc
-): ParseExpression => {
-  const [key, [access2_, ...tokens2]] = parseExpression(tokens, [
-    ...acc,
-    { collection, access_ },
-  ]);
-  if (key?.type === "access") {
-    return [key, [access2_, ...tokens2]];
-  }
-  if (access2_.value !== lex.ACCESS) {
-    return [
-      wrapExpression("access", [...acc, { collection, access_ }, { key }]),
-      [access2_, ...tokens2],
-    ];
-  }
-  return [null, []];
-};
-
 //for each priority level,
 // go through chain, check if there
 
@@ -438,9 +416,6 @@ const parseLookBehinds = (
   tokens,
   acc = []
 ): ParseExpression => {
-  if (token.value === lex.ACCESS) {
-    return parseAccess(expression, token, tokens, acc);
-  }
   if (infix.includes(token.value)) {
     return parseInfix(expression, token, tokens, acc);
   }

@@ -18,7 +18,6 @@ const syntax = {
   OPENMAP: "#[",
   CLOSEMAP: "]",
   MAPDIVIDER: ":",
-  ACCESS: ".",
 
   OPENSTRINGDOUBLE: '"',
   CLOSESTRINGDOUBLE: '"',
@@ -42,6 +41,8 @@ const unary = {
 };
 
 const infixes = {
+  ACCESS: ".",
+
   BEQ: "==",
   NOTEQ: "!=",
   AND: "&",
@@ -61,6 +62,7 @@ const infixes = {
 };
 
 export const priority = [
+  [infixes.ACCESS],
   [infixes.EXPONENT],
   [infixes.MULTIPLY, infixes.DIVIDE, infixes.MODULO],
   [infixes.ADD, infixes.SUBTRACT],
