@@ -15,7 +15,8 @@ const evalSequence = ({ body }, env) => {
   if (!body.length) {
     return "null";
   }
-  return body.map((expr) => e(expr, env))[body.length - 1];
+  const newEnv = extendEnv(env, {});
+  return body.map((expr) => e(expr, newEnv))[body.length - 1];
 };
 
 const evalIf = ({ conditional, consequent, alternate }, env) => {
