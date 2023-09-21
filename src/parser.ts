@@ -217,8 +217,7 @@ const parseParens = (open_: Token, tokens: Token[]): ParseExpression => {
   if (maybeArrow.value === lex.LAMBDA) {
     return parseLambda(open_, sequence, close_, maybeArrow, restTokens2);
   }
-  //@ts-ignore
-  return parseApply(open_, sequenceBody, close_, restTokens);
+  return parseApply(open_, sequence, close_, restTokens);
 };
 
 const parseLambda = (
@@ -264,10 +263,11 @@ const parseApply = (
 };
 
 const parseDefine = (let_: Token, tokens: Token[]): ParseExpression => {
-  const [id_, ...rest1] = tokens;
-  const [id, [equals_, ...rest2]] = parseId(id_, rest1);
-  const [expression, rest3] = parseExpression(rest2);
-  return [wrapExpression("let", { let_, id, equals_, expression }), rest3];
+  // const [id_, ...rest1] = tokens;
+  // const [id, [equals_, ...rest2]] = parseId(id_, rest1);
+  // const [expression, rest3] = parseExpression(rest2);
+  const [assignment, rest3] = parseExpression(tokens);
+  return [wrapExpression("let", { let_, assignment }), rest3];
 };
 
 const parseList = (open_: Token, tokens: Token[]): ParseExpression => {

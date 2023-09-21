@@ -9,7 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const evaluator_1 = require("./evaluator");
 const test = fs_1.default.readFileSync("./test.txt", { encoding: "utf8", flag: "r" });
-console.log((0, evaluator_1.evaluate)(test));
+console.log("> ", (0, evaluator_1.evaluate)(test));
 // async function logChunks(readable) {
 //   let ok = [];
 //   for await (const chunk of readable) {
