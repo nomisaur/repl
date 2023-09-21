@@ -1,9 +1,2 @@
 
-
-tokenize comments and strings and numbers
-
-apply comments to nearest token
-
-data structures!!!!
-list
-object
+NomScript

@@ -1,2 +1,6 @@
-let greet = name -> "hello ${name}!!!"
-(greet "world")
+let test = () -> {
+  let a = "inner"
+  () -> a
+}
+let a = "outer"
+((test))

@@ -57,8 +57,8 @@ const extendEnv = (env, vars) => {
   return { vars, parent: env };
 };
 
-const apply = ({ func, args }, env) => {
-  const { params, body } = e(func, env);
+const apply = ({ func, args }, outerEnv) => {
+  const { params, body, env } = e(func, outerEnv);
 
   const vars = params.reduce((acc, param, index) => {
     return { ...acc, [param.value.id]: e(args[index], env) };
@@ -98,7 +98,7 @@ const e = (expr, env) => {
     return evalDefine(value, env);
   }
   if (type === "lambda") {
-    return { type, params: value.params, body: value.body };
+    return { type, params: value.params, body: value.body, env };
   }
   if (type === "apply") {
     return apply(value, env);
