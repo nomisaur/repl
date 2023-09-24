@@ -42,6 +42,17 @@ const evalDefine = (
   return env.vars[id];
 };
 
+const evalAssign = ({ id, expression }, env) => {
+  if (!env) {
+    throw `cant reassign stuff that don't exist yet: ${id}`;
+  }
+  if (!env.vars[id]) {
+    return evalAssign({ id, expression }, env.parent);
+  }
+  env.vars[id] = e(expression, env);
+  return env.vars[id];
+};
+
 const evalString = (parts, env) => {
   return parts
     .reduce((acc, part) => {
@@ -97,6 +108,9 @@ const e = (expr, env) => {
   if (type === "let") {
     return evalDefine(value, env);
   }
+  if (type === "assignment") {
+    return evalAssign(value, env);
+  }
   if (type === "lambda") {
     return { type, params: value.params, body: value.body, env };
   }
@@ -108,7 +122,12 @@ const e = (expr, env) => {
 export const evaluate = (text) => {
   const ast = parse(text).slice(0, -1);
 
-  const result = evalSequence({ body: ast }, { vars: {} });
+  const result = evalSequence(
+    { body: ast },
+    {
+      vars: {},
+    }
+  );
   return result;
 };
 

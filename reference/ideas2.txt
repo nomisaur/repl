@@ -1,0 +1,139 @@
+id -> expr
+[id] -> expr
+#[id] -> expr
+
+id = expr
+[id] = expr
+#[id] = expr
+id ~ expr
+
+expr & expr
+expr | expr
+expr ? expr : expr
+
++ - * \ % ^ ( )
+
+== != > < >= <=
+
+->
+.
+$
+
+
+
+
+
+add1 = $ yield {
+  1 + yield()
+} [n k] -> k
+
+(k 1) == 2
+
+let returnable = (func) -> {
+  () -> catch return (func) v -> v
+}
+
+let getDogs = (returnable () -> {
+  let dogs = fetch("dogs.com")
+  if !dogs then (return defaultDog.name)
+
+  let dog = (first dog)
+  return dog.name
+})
+
+
+
+1 + 2 * 3 + 4 ^ 2 * 1 + 8
+1 + 6 + 4 ^ 2 * 1 + 8
+7 + 4 ^ 2 * 1 + 8 
+7 + 16 * 1 + 8
+7 + 16 + 8
+
+
+0 + 1 * 2 ^ 3
+0 + 1 * 8
+
+1 * 2 ^ 3 + 1
+1 * 8 + 1
+
+
+f is [] to 42
+set f to (f)
+call f []
+
+
+
+let catch = (func) -> {
+  let resultOrError = delimit throw
+    (func)
+    (error k) -> #[type: "error", error: error]
+  if resultOrError.type == "error"
+    then [resultOrError, null]
+    else [null, resultOrError]
+}
+
+let fetchButts = () -> {
+  let result = (fetch "butts.com")
+  if (!result)
+    then (throw "no butts")
+    else result
+}
+
+let [error, result] = (catch fetchButts)
+
+
+let b = delimit {
+  let a = 1 + yield(1)
+  a
+} (value k) -> (k value + 1)
+
+delimit yield { 
+  let a = 1 + yield(1)
+  a
+} (value k) -> (k value + 1)
+
+
+
+let try = (func) -> {
+  let resultOrError = catch throw
+    (func)
+    (error k) -> #[type: "error", error: error]
+  if resultOrError.type == "error"
+    then [resultOrError, null]
+    else [null, resultOrError]
+}
+
+let fetchButts = () -> {
+  let result = (fetch "butts.com")
+  if !result
+    then (throw "no butts")
+  (mapData result)
+}
+
+let [error, result] = (try fetchButts)
+
+
+
+let add1 = catch yield {
+  1 + (yield)
+} (n k) -> k
+
+(k 1) == 2
+
+
+let try = func -> delimit (func) (value, k) -> value
+
+(try () -> 1 + 2, e -> (log e))
+
+
+let returnable = (func) -> {
+  () -> catch return (func) v -> v
+}
+
+getDogs = returnable ( [] -> {
+  dogs = fetch @ "dogs.com"
+  !dogs & return defaultDog.name
+
+  dog = first @ dog 
+  return dog.name
+})

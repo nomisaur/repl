@@ -1,6 +1,10 @@
-let test = () -> {
-  let a = "inner"
-  () -> a
+let a = 1
+
+let b = () -> {
+  let a = 2
+  () -> a = "${a}!"
 }
-let a = "outer"
-((test))
+
+let c = (b)
+(c)
+(c)
