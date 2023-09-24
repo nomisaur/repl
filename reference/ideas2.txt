@@ -130,10 +130,29 @@ let returnable = (func) -> {
   () -> catch return (func) v -> v
 }
 
-getDogs = returnable ( [] -> {
-  dogs = fetch @ "dogs.com"
-  !dogs & return defaultDog.name
+getDogs = returnable{() -> (
+  dogs = fetch{"dogs.com"}
+  !dogs & return{defaultDog.name}
 
-  dog = first @ dog 
+  dog = first{dogs} 
   return dog.name
-})
+)}
+
+
+
+
+
+a = 1
+
+b = () -> {
+  a = 2
+  () -> {
+    a ~ "\{a}!"
+  }
+}
+
+let c = b()
+c()
+c()
+
+{1 + 2} * 3

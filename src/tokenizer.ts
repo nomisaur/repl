@@ -40,7 +40,13 @@ const matcher = (type, chars, regex): [RawToken, string] | null => {
   return null;
 };
 
+// const stringMatcher = (characters): [RawToken, string] | null => {
+//   const [char, ...rest] = characters;
+// };
+
 export const getNextRawToken = (characters): [RawToken, string] => {
+  // const string = stringMatcher(characters);
+  // if (string) return string;
   const ignored = matcher("ignored", characters, ignoredRegex);
   if (ignored) return ignored;
   const syntax = matcher("lex", characters, lexRegex);

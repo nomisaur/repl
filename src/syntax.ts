@@ -24,7 +24,7 @@ const syntax = {
   OPENSTRINGSINGLE: "'",
   CLOSESTRINGSINGE: "'",
   ESCAPE: "\\",
-  OPENINTERPOLATE: "${",
+  OPENINTERPOLATE: "\\{",
   CLOSEINTERPOLATE: "}",
 
   IGNORED: ",",

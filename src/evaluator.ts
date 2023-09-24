@@ -3,14 +3,6 @@ import { tokenize, Token } from "./tokenizer";
 import { lex, infix, priority } from "./syntax";
 import { parse } from "./parser";
 
-// (define (eval-sequence exps env)
-//   (cond ((last-exp? exps)
-//          (eval (first-exp exps) env))
-//         (else
-//          (eval (first-exp exps) env)
-//          (eval-sequence (rest-exps exps)
-//                         env))))
-
 const evalSequence = ({ body }, env) => {
   if (!body.length) {
     return "null";
@@ -58,7 +50,9 @@ const evalString = (parts, env) => {
     .reduce((acc, part) => {
       return [
         ...acc,
-        part.type === "string-part" ? part.value.body : e(part, env),
+        part.type === "string-part"
+          ? part.value.body
+          : evalSequence({ body: part }, env),
       ];
     }, [])
     .join("");

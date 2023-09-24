@@ -76,11 +76,11 @@ const parseIf = (if_: Token, tokens: Token[]): ParseExpression => {
 };
 
 const getSequence = (
-  open_: Token,
+  open_: Token | null,
   tokens: Token[],
   closeMatcher: (value: string) => boolean,
   parser: (tokens: Token[]) => ParseExpression = parseExpression
-): [Token, Expression[], Token, Token[]] => {
+): [Token | null, Expression[], Token, Token[]] => {
   const [expressions, [close_, ...restTokens]] = loop(
     (next, acc, tokens) => {
       const [maybeClose_, ...restTokens] = tokens;
@@ -196,8 +196,12 @@ const parseString = (open_: Token, tokens: Token[]): ParseExpression => {
       if (hasFinished) {
         return [wrapExpression("string", [...acc, part]), rest];
       }
-      const [expression, rest2] = parseExpression(rest);
-      return next([...acc, part, expression], rest2);
+      const [_, expressions, close_, rest2] = getSequence(
+        null,
+        rest,
+        (v) => v === lex.CLOSEINTERPOLATE
+      );
+      return next([...acc, part, expressions], [close_, ...rest2]);
     },
     [],
     [open_, ...tokens]
@@ -452,6 +456,6 @@ const parseProgram = (tokens: Token[]): Expression[] => {
 export const parse = (code: string) => {
   const tokens = tokenize(code);
   const parseTree = parseProgram(tokens);
-  // console.log(inspect(parseTree));
+  console.log(inspect(parseTree));
   return parseTree;
 };
