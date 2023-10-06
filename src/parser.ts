@@ -141,13 +141,13 @@ const parseEscapes = (text) =>
           return [[...acc, "\n"], false];
         }
         if (escaped && char === "r") {
-          return [[...acc, "\b"], false];
+          return [[...acc, "\r"], false];
         }
         if (escaped && char === "t") {
-          return [[...acc, "\b"], false];
+          return [[...acc, "\t"], false];
         }
         if (escaped && char === "v") {
-          return [[...acc, "\b"], false];
+          return [[...acc, "\v"], false];
         }
         return [[...acc, char], false];
       },

@@ -1,0 +1,5 @@
+let a = () -> {
+  let c = 3
+  let d = () -> c 
+  c
+}

@@ -1,6 +1,10 @@
+{expr expr}
+
 id -> expr
 [id] -> expr
 #[id] -> expr
+
+id(expr)
 
 id = expr
 [id] = expr
@@ -9,15 +13,28 @@ id ~ expr
 
 expr & expr
 expr | expr
+!expr
+expr !& expr
+expr !| expr
 expr ? expr : expr
 
-+ - * \ % ^ ( )
+`expr
+
+[expr expr]
+#[id: expr, id, (expr): expr]
+expr.expr;expr
+
+"string \{expr expr}"
+
++ - * / % ^ ( )
 
 == != > < >= <=
 
-->
-.
-$
+expr @ comment
+
+@{
+  multiline comment
+}
 
 
 
@@ -92,12 +109,10 @@ delimit yield {
   a
 } (value k) -> (k value + 1)
 
-
-
 let try = (func) -> {
   let resultOrError = catch throw
     (func)
-    (error k) -> #[type: "error", error: error]
+    (error k) -> #[type: "error", error]
   if resultOrError.type == "error"
     then [resultOrError, null]
     else [null, resultOrError]
@@ -110,7 +125,7 @@ let fetchButts = () -> {
   (mapData result)
 }
 
-let [error, result] = (try fetchButts)
+let [error, result] = try(fetchButts)
 
 
 
@@ -123,11 +138,11 @@ let add1 = catch yield {
 
 let try = func -> delimit (func) (value, k) -> value
 
-(try () -> 1 + 2, e -> (log e))
+try(() -> 1 + 2, e -> log(e))
 
 
 let returnable = (func) -> {
-  () -> catch return (func) v -> v
+  () -> catch return func() v -> v
 }
 
 getDogs = returnable{() -> (
@@ -156,3 +171,31 @@ c()
 c()
 
 {1 + 2} * 3
+
+
+
+
+
+
+let func = () -> catch return {
+  if a return(null) else
+  let b = doStuff()
+  if b return(b)
+} (value k) -> value
+
+catch break {
+  break()
+} (value k) -> value
+
+
+
+a = #[ ("oh boy"): 1 ]
+a.{"oh boy"}
+
+a = #[ okay: 1 ]
+a.okay
+
+a = [[1]]
+a;0;0
+
+Date.now()

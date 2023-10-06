@@ -11,6 +11,26 @@ const evalSequence = ({ body }, env) => {
   return body.map((expr) => e(expr, newEnv))[body.length - 1];
 };
 
+const evalList = ({ body }, env) => {
+  if (!body.length) {
+    return [];
+  }
+  return body.map((expr) => e(expr, env));
+};
+
+const evalMap = ({ body }, env) => {
+  if (!body.length) {
+    return {};
+  }
+  return body.reduce(
+    (acc, { value: { key, val } }) => ({
+      ...acc,
+      [e(key, env)]: e(val, env),
+    }),
+    {}
+  );
+};
+
 const evalIf = ({ conditional, consequent, alternate }, env) => {
   if (e(conditional, env) === "true") {
     return e(consequent, env);
@@ -85,7 +105,7 @@ const e = (expr, env) => {
     return lookupVariable(value.id, env);
   }
   if (type === "number") {
-    return value.number;
+    return parseFloat(value.number);
   }
   if (type === "string") {
     return evalString(value, env);
@@ -98,6 +118,12 @@ const e = (expr, env) => {
   }
   if (type === "sequence") {
     return evalSequence(value, env);
+  }
+  if (type === "list") {
+    return evalList(value, env);
+  }
+  if (type === "map") {
+    return evalMap(value, env);
   }
   if (type === "let") {
     return evalDefine(value, env);

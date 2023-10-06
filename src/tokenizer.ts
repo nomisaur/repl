@@ -65,7 +65,7 @@ export const getNextRawToken = (characters): [RawToken, string] => {
   ];
 };
 
-export const getNextToken = (characters): [Token, string] =>
+export const getNextToken = (characters: string): [Token, string] =>
   loop(
     (next, irrelevant, chars) => {
       if (chars === "") {
